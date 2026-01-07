@@ -1,0 +1,39 @@
+﻿{
+    "id":  "74e28bf8-ea48-4d4f-8be6-3cda05a776ce",
+    "chatid":  "447780070018@s.whatsapp.net",
+    "owner":  "5511940820844",
+    "created_at":  "2025-11-21T20:32:46.48+00:00",
+    "resultado_ia":  {
+                         "metrics":  {
+                                         "tempo_medio_resposta_texto":  "0s",
+                                         "tempo_primeira_resposta_texto":  "0s"
+                                     },
+                         "funil_fase":  "Em Negociação",
+                         "temperatura":  "Morno",
+                         "dados_cadastrais":  {
+                                                  "nome_lead":  null,
+                                                  "nome_vendedor":  "Atendente",
+                                                  "origem_detectada":  "Orgânico"
+                                              },
+                         "resumo_executivo":  "A conversa encontra-se na fase de aquisição de leads. O atendente está utilizando uma estratégia de nutrição de funil, tentando direcionar o lead para um grupo de WhatsApp com o objetivo de futuramente disparar ofertas e promoções. O lead ainda não interagiu.",
+                         "tipo_conversacao":  "Vendas",
+                         "detalhes_conversao":  null,
+                         "performance_vendas":  {
+                                                    "pontos_fortes":  [
+                                                                          "Clareza na Chamada para Ação (CTA).",
+                                                                          "Uso de gatilho de escassez/urgência (\u0027ofertas incríveis\u0027) para motivar a adesão ao grupo.",
+                                                                          "A mensagem é concisa e entrega o link imediatamente."
+                                                                      ],
+                                                    "pontos_melhoria":  [
+                                                                            "A abordagem é puramente robótica/funil; falta personalização inicial ou tentativa de qualificação imediata do lead.",
+                                                                            "O atendente precisa de um script de contingência caso o lead não queira entrar no grupo."
+                                                                        ]
+                                                },
+                         "conversao_realizada":  false,
+                         "objecoes_detectadas":  [
+
+                                                 ],
+                         "nota_atendimento_0_100":  85,
+                         "proximo_passo_sugerido":  "Aguardar a confirmação de entrada do Lead no grupo de ofertas. Se o Lead não responder, a próxima ação deve ser qualificar (perguntar sobre objetivo/interesse direto na academia) e não apenas insistir no link."
+                     }
+}
