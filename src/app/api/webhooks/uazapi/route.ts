@@ -135,29 +135,14 @@ export async function POST(req: NextRequest) {
     }
     
     // ============================================
-    // 3. Salvar mensagem em mensagens_clientes
+    // Nota: NÃO salvamos em mensagens_clientes aqui
+    // O N8N já tem um fluxo separado que faz isso
+    // Este webhook é APENAS para tracking de origem
     // ============================================
-    const { error: messageError } = await supabaseAdmin
-      .from("mensagens_clientes")
-      .insert({
-        chatid,
-        owner,
-        mensagem: messageText,
-        from_me: false,
-        timestamp_ms: message.messageTimestamp,
-      });
-    
-    if (messageError) {
-      // Log mas não falha - a mensagem pode já existir
-      if (!messageError.code?.includes("23505")) {
-        console.error("[Webhook UazAPI] Erro ao salvar mensagem:", messageError);
-      }
-    }
     
     return NextResponse.json({ 
       ok: true, 
-      tracking: !existingTracking ? "created" : "exists",
-      message: messageError ? "skipped" : "saved"
+      tracking: !existingTracking ? "created" : "exists"
     });
     
   } catch (error) {
