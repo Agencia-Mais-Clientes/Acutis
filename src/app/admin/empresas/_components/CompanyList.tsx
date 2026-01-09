@@ -143,12 +143,12 @@ export function CompanyList({ empresas }: CompanyListProps) {
               {/* Conexão WhatsApp */}
               <td className="p-4 text-center">
                 {empresa.whatsapp_conectado ? (
-                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                  <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200">
                     <Wifi className="h-3 w-3 mr-1" />
                     Online
                   </Badge>
                 ) : (
-                  <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                  <Badge className="bg-rose-100 text-rose-700 border border-rose-200 hover:bg-rose-200">
                     <WifiOff className="h-3 w-3 mr-1" />
                     Offline
                   </Badge>
@@ -158,12 +158,12 @@ export function CompanyList({ empresas }: CompanyListProps) {
               {/* Status Ativo */}
               <td className="p-4 text-center">
                 {empresa.ativo ? (
-                  <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                  <Badge className="bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200">
                     <Power className="h-3 w-3 mr-1" />
                     Ativo
                   </Badge>
                 ) : (
-                  <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">
+                  <Badge className="bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200">
                     <PowerOff className="h-3 w-3 mr-1" />
                     Inativo
                   </Badge>
@@ -173,12 +173,12 @@ export function CompanyList({ empresas }: CompanyListProps) {
               {/* IA Config */}
               <td className="p-4 text-center">
                 {empresa.instrucoes_ia ? (
-                  <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                  <Badge className="bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200">
                     <Bot className="h-3 w-3 mr-1" />
                     Configurado
                   </Badge>
                 ) : (
-                  <span className="text-xs text-gray-600">Padrão</span>
+                  <span className="text-xs text-gray-400">Padrão</span>
                 )}
               </td>
 

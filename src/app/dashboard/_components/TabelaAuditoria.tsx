@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AnaliseConversa } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { DetalheLead } from "./DetalheLead";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 
 interface TabelaAuditoriaProps {
   analises: AnaliseConversa[];
@@ -17,66 +18,202 @@ export function TabelaAuditoria({ analises }: TabelaAuditoriaProps) {
   const [busca, setBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState<string>("ALL");
   const [filtroFunil, setFiltroFunil] = useState<string>("ALL");
+  const [filtroOrigem, setFiltroOrigem] = useState<string>("ALL");
+  const [filtroTemp, setFiltroTemp] = useState<string>("ALL");
+  const [filtroPeriodo, setFiltroPeriodo] = useState<string>("ALL");
   const [analiseSelecionada, setAnaliseSelecionada] = useState<AnaliseConversa | null>(null);
 
+  // Check if any filter is active
+  const hasActiveFilters = filtroTipo !== "ALL" || filtroFunil !== "ALL" || filtroOrigem !== "ALL" || filtroTemp !== "ALL" || filtroPeriodo !== "ALL" || busca !== "";
+
+  // Clear all filters
+  const clearFilters = () => {
+    setBusca("");
+    setFiltroTipo("ALL");
+    setFiltroFunil("ALL");
+    setFiltroOrigem("ALL");
+    setFiltroTemp("ALL");
+    setFiltroPeriodo("ALL");
+  };
+
   // Filtro das análises
-  const analisesFiltradas = analises.filter((a) => {
-    const nome = a.resultado_ia?.dados_cadastrais?.nome_lead?.toLowerCase() || "";
-    const chatid = a.chatid?.toLowerCase() || "";
-    const matchBusca =
-      busca === "" || nome.includes(busca.toLowerCase()) || chatid.includes(busca.toLowerCase());
+  const analisesFiltradas = useMemo(() => {
+    return analises.filter((a) => {
+      const nome = a.resultado_ia?.dados_cadastrais?.nome_lead?.toLowerCase() || "";
+      const chatid = a.chatid?.toLowerCase() || "";
+      const matchBusca =
+        busca === "" || nome.includes(busca.toLowerCase()) || chatid.includes(busca.toLowerCase());
 
-    const tipo = a.resultado_ia?.tipo_conversacao || "";
-    const matchTipo = filtroTipo === "ALL" || tipo === filtroTipo;
+      const tipo = a.resultado_ia?.tipo_conversacao || "";
+      const matchTipo = filtroTipo === "ALL" || tipo === filtroTipo;
 
-    const funil = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    let matchFunil = filtroFunil === "ALL";
-    if (filtroFunil === "SUCESSO") {
-      matchFunil = funil.includes("vendido") || funil.includes("agendado") || funil.includes("matriculado");
-    } else if (filtroFunil === "NEGOCIACAO") {
-      matchFunil = funil.includes("negociação") || funil.includes("negociacao");
-    } else if (filtroFunil === "PERDIDO") {
-      matchFunil = funil.includes("perdido");
-    }
+      const funil = a.resultado_ia?.funil_fase?.toLowerCase() || "";
+      let matchFunil = filtroFunil === "ALL";
+      if (filtroFunil === "SUCESSO") {
+        matchFunil = funil.includes("vendido") || funil.includes("agendado") || funil.includes("matriculado");
+      } else if (filtroFunil === "NEGOCIACAO") {
+        matchFunil = funil.includes("negociação") || funil.includes("negociacao");
+      } else if (filtroFunil === "PERDIDO") {
+        matchFunil = funil.includes("perdido");
+      }
 
-    return matchBusca && matchTipo && matchFunil;
-  });
+      // Origem filter (paid traffic)
+      const origem = a.resultado_ia?.dados_cadastrais?.origem_detectada?.toLowerCase() || "orgânico";
+      let matchOrigem = filtroOrigem === "ALL";
+      if (filtroOrigem === "META") {
+        matchOrigem = origem.includes("meta") || origem.includes("insta") || origem.includes("face");
+      } else if (filtroOrigem === "GOOGLE") {
+        matchOrigem = origem.includes("google");
+      } else if (filtroOrigem === "INDICACAO") {
+        matchOrigem = origem.includes("indica");
+      } else if (filtroOrigem === "ORGANICO") {
+        matchOrigem = origem === "orgânico" || origem === "organico" || (!origem.includes("meta") && !origem.includes("google") && !origem.includes("indica"));
+      }
+
+      // Temperatura filter
+      const temp = a.resultado_ia?.temperatura?.toLowerCase() || "frio";
+      let matchTemp = filtroTemp === "ALL";
+      if (filtroTemp === "QUENTE") {
+        matchTemp = temp.includes("quente");
+      } else if (filtroTemp === "MORNO") {
+        matchTemp = temp.includes("morno");
+      } else if (filtroTemp === "FRIO") {
+        matchTemp = temp.includes("frio");
+      }
+
+      // Período filter
+      const dataAnalise = new Date(a.created_at);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      let matchPeriodo = filtroPeriodo === "ALL";
+      if (filtroPeriodo === "HOJE") {
+        matchPeriodo = dataAnalise >= hoje;
+      } else if (filtroPeriodo === "7D") {
+        const seteDiasAtras = new Date(hoje);
+        seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+        matchPeriodo = dataAnalise >= seteDiasAtras;
+      } else if (filtroPeriodo === "30D") {
+        const trintaDiasAtras = new Date(hoje);
+        trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+        matchPeriodo = dataAnalise >= trintaDiasAtras;
+      }
+
+      return matchBusca && matchTipo && matchFunil && matchOrigem && matchTemp && matchPeriodo;
+    });
+  }, [analises, busca, filtroTipo, filtroFunil, filtroOrigem, filtroTemp, filtroPeriodo]);
 
   return (
     <>
-      <Card className="bg-[#0b0d11] border-gray-800">
-        <CardHeader className="border-b border-gray-800 bg-[#0e1116] pb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle className="text-sm font-bold text-white">
-              Registros de Atendimento
-            </CardTitle>
+      <Card className="border shadow-none rounded-lg overflow-hidden">
+        <CardHeader className="border-b bg-muted/20 pb-4">
+          <div className="flex flex-col gap-4">
+            {/* Title Row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-sm font-semibold text-foreground tracking-tight">
+                  Registros de Atendimento
+                </CardTitle>
+                <Badge variant="outline" className="text-[10px] bg-white border-border font-medium">
+                  {analisesFiltradas.length} de {analises.length}
+                </Badge>
+              </div>
+              {hasActiveFilters && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearFilters}
+                  className="text-xs text-muted-foreground hover:text-destructive h-7 px-2"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Limpar Filtros
+                </Button>
+              )}
+            </div>
+            
+            {/* Filters Row */}
             <div className="flex flex-wrap items-center gap-2">
+              {/* Tipo */}
               <select
                 value={filtroTipo}
                 onChange={(e) => setFiltroTipo(e.target.value)}
-                className="bg-[#1c2128] text-xs text-gray-300 border border-gray-700 rounded px-3 py-1.5 focus:border-green-600 focus:outline-none cursor-pointer hover:bg-[#252b36]"
+                className="bg-white text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer hover:bg-muted/50 transition-colors shadow-sm"
               >
                 <option value="ALL">Todos Tipos</option>
-                <option value="Vendas">Vendas</option>
-                <option value="Suporte">Suporte</option>
+                <option value="Vendas">💲 Vendas</option>
+                <option value="Suporte">🛠 Suporte</option>
               </select>
+
+              {/* Funil */}
               <select
                 value={filtroFunil}
                 onChange={(e) => setFiltroFunil(e.target.value)}
-                className="bg-[#1c2128] text-xs text-gray-300 border border-gray-700 rounded px-3 py-1.5 focus:border-green-600 focus:outline-none cursor-pointer hover:bg-[#252b36]"
+                className="bg-white text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer hover:bg-muted/50 transition-colors shadow-sm"
               >
                 <option value="ALL">Todas Fases</option>
-                <option value="SUCESSO">Sucesso</option>
-                <option value="NEGOCIACAO">Negociação</option>
-                <option value="PERDIDO">Perdidos</option>
+                <option value="SUCESSO">✅ Sucesso</option>
+                <option value="NEGOCIACAO">🔄 Negociação</option>
+                <option value="PERDIDO">❌ Perdidos</option>
               </select>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-500" />
+
+              {/* Origem (Tráfego Pago) */}
+              <select
+                value={filtroOrigem}
+                onChange={(e) => setFiltroOrigem(e.target.value)}
+                className={`text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer transition-colors shadow-sm ${
+                  filtroOrigem !== "ALL" 
+                    ? "bg-blue-50 border-blue-200 text-blue-700 font-medium" 
+                    : "bg-white hover:bg-muted/50"
+                }`}
+              >
+                <option value="ALL">📢 Todas Origens</option>
+                <option value="META">📘 Meta Ads</option>
+                <option value="GOOGLE">🔍 Google Ads</option>
+                <option value="INDICACAO">👥 Indicação</option>
+                <option value="ORGANICO">🌱 Orgânico</option>
+              </select>
+
+              {/* Temperatura */}
+              <select
+                value={filtroTemp}
+                onChange={(e) => setFiltroTemp(e.target.value)}
+                className={`text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer transition-colors shadow-sm ${
+                  filtroTemp !== "ALL" 
+                    ? filtroTemp === "QUENTE" ? "bg-red-50 border-red-200 text-red-700 font-medium"
+                    : filtroTemp === "MORNO" ? "bg-amber-50 border-amber-200 text-amber-700 font-medium"
+                    : "bg-blue-50 border-blue-200 text-blue-700 font-medium"
+                    : "bg-white hover:bg-muted/50"
+                }`}
+              >
+                <option value="ALL">🌡️ Temperatura</option>
+                <option value="QUENTE">🔥 Quente</option>
+                <option value="MORNO">🟡 Morno</option>
+                <option value="FRIO">❄️ Frio</option>
+              </select>
+
+              {/* Período */}
+              <select
+                value={filtroPeriodo}
+                onChange={(e) => setFiltroPeriodo(e.target.value)}
+                className={`text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer transition-colors shadow-sm ${
+                  filtroPeriodo !== "ALL" 
+                    ? "bg-purple-50 border-purple-200 text-purple-700 font-medium" 
+                    : "bg-white hover:bg-muted/50"
+                }`}
+              >
+                <option value="ALL">📅 Todo Período</option>
+                <option value="HOJE">Hoje</option>
+                <option value="7D">Últimos 7 dias</option>
+                <option value="30D">Últimos 30 dias</option>
+              </select>
+
+              {/* Busca */}
+              <div className="relative ml-auto">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/70" />
                 <Input
-                  placeholder="Buscar..."
+                  placeholder="Buscar lead..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="bg-[#050505] border-gray-700 text-gray-300 pl-8 w-48 h-8 text-xs"
+                  className="pl-9 w-52 h-8 text-xs bg-white border-muted shadow-sm focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>
@@ -84,22 +221,22 @@ export function TabelaAuditoria({ analises }: TabelaAuditoriaProps) {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left bg-white">
               <thead>
-                <tr className="bg-[#13161c] text-gray-500 text-[10px] uppercase tracking-wider border-b border-gray-800 font-bold">
-                  <th className="p-4">Lead / Origem</th>
+                <tr className="border-b border-border bg-white text-muted-foreground text-[10px] uppercase tracking-wider font-semibold">
+                  <th className="p-4 pl-6">Lead / Origem</th>
                   <th className="p-4">Data</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Temp.</th>
                   <th className="p-4">Score</th>
-                  <th className="p-4"></th>
+                  <th className="p-4 pr-6"></th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
+              <tbody className="text-sm divide-y divide-border/50">
                 {analisesFiltradas.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-12 text-center text-gray-600 text-xs">
-                      Nenhum registro encontrado
+                    <td colSpan={6} className="p-16 text-center text-muted-foreground text-xs bg-muted/5">
+                      Nenhum registro encontrado com os filtros selecionados
                     </td>
                   </tr>
                 ) : (
@@ -155,32 +292,47 @@ function LinhaTabela({
     return nums;
   };
 
+  // Avatar color by tipo
+  const getAvatarStyle = () => {
+    if (tipo === "Suporte") {
+      return "bg-gradient-to-br from-indigo-400 to-purple-500 text-white border-indigo-300";
+    }
+    return "bg-gradient-to-br from-emerald-400 to-teal-500 text-white border-emerald-300";
+  };
+
   return (
     <tr
-      className="group border-b border-gray-800 hover:bg-[#13161c] transition-colors cursor-pointer"
+      className="group hover:bg-gradient-to-r hover:from-violet-50/50 hover:to-blue-50/50 transition-all duration-200 cursor-pointer border-b border-gray-100 last:border-0"
       onClick={onClick}
     >
-      <td className="p-4">
+      <td className="p-4 pl-6">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#1c2128] border border-gray-700 flex items-center justify-center text-xs font-bold text-gray-400 group-hover:border-green-600/50 group-hover:text-white transition">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold shadow-md transition-transform group-hover:scale-105 ${getAvatarStyle()}`}>
             {iniciais}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-gray-200 text-sm group-hover:text-white transition">
+              <span className="font-semibold text-foreground text-sm group-hover:text-violet-700 transition-colors">
                 {nome}
               </span>
               <TipoBadge tipo={tipo} />
             </div>
-            <div className="text-xs text-gray-500 font-mono mt-0.5 flex items-center gap-2">
-              <span>{formatPhone(analise.chatid)}</span>
-              <span>•</span>
+            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+              <span className="font-medium">{formatPhone(analise.chatid)}</span>
+              <span className="text-muted-foreground/40">•</span>
               <OrigemBadge origem={origem} />
             </div>
           </div>
         </div>
       </td>
-      <td className="p-4 text-gray-500 text-xs font-mono">{data}</td>
+      <td className="p-4">
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-foreground tabular-nums">{data}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {new Date(analise.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
+      </td>
       <td className="p-4">
         <StatusBadge funil={funil} tipo={tipo} />
       </td>
@@ -189,15 +341,27 @@ function LinhaTabela({
       </td>
       <td className="p-4">
         <div className="flex items-center gap-3">
-          <Progress
-            value={score}
-            className="w-16 h-1"
-          />
-          <span className="font-bold text-sm text-white">{score}</span>
+          <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all duration-500 ${
+                score >= 80 ? "bg-gradient-to-r from-emerald-400 to-green-500" :
+                score >= 50 ? "bg-gradient-to-r from-amber-400 to-orange-400" :
+                "bg-gradient-to-r from-red-400 to-rose-500"
+              }`}
+              style={{ width: `${score}%` }}
+            />
+          </div>
+          <span className={`font-bold text-xs tabular-nums ${
+            score >= 80 ? "text-emerald-600" :
+            score >= 50 ? "text-amber-600" :
+            "text-red-600"
+          }`}>{score}</span>
         </div>
       </td>
-      <td className="p-4 text-right">
-        <ChevronDown className="h-4 w-4 text-gray-600 group-hover:text-white transition" />
+      <td className="p-4 pr-6 text-right">
+        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-violet-100 transition-colors">
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-violet-600 transition-colors" />
+        </div>
       </td>
     </tr>
   );
@@ -206,13 +370,13 @@ function LinhaTabela({
 function TipoBadge({ tipo }: { tipo: string }) {
   if (tipo === "Suporte") {
     return (
-      <Badge variant="outline" className="text-[9px] bg-indigo-500/20 text-indigo-300 border-indigo-500/30">
+      <Badge variant="outline" className="text-[9px] bg-indigo-50 text-indigo-700 border-indigo-200">
         🛠 SUPORTE
       </Badge>
     );
   }
   return (
-    <Badge variant="outline" className="text-[9px] bg-emerald-500/20 text-emerald-400 border-emerald-800">
+    <Badge variant="outline" className="text-[9px] bg-emerald-50 text-emerald-700 border-emerald-200">
       💲 VENDAS
     </Badge>
   );
@@ -221,15 +385,15 @@ function TipoBadge({ tipo }: { tipo: string }) {
 function OrigemBadge({ origem }: { origem: string }) {
   const o = origem.toLowerCase();
   if (o.includes("meta") || o.includes("insta") || o.includes("face")) {
-    return <span className="text-[9px] font-bold text-blue-400 border border-blue-900 bg-blue-900/20 px-1.5 rounded">META</span>;
+    return <span className="text-[9px] font-bold text-blue-700 border border-blue-200 bg-blue-50 px-1.5 rounded">META</span>;
   }
   if (o.includes("google")) {
-    return <span className="text-[9px] font-bold text-orange-400 border border-orange-900 bg-orange-900/20 px-1.5 rounded">GOOGLE</span>;
+    return <span className="text-[9px] font-bold text-orange-700 border border-orange-200 bg-orange-50 px-1.5 rounded">GOOGLE</span>;
   }
   if (o.includes("indica")) {
-    return <span className="text-[9px] font-bold text-purple-400 border border-purple-900 bg-purple-900/20 px-1.5 rounded">INDICAÇÃO</span>;
+    return <span className="text-[9px] font-bold text-purple-700 border border-purple-200 bg-purple-50 px-1.5 rounded">INDICAÇÃO</span>;
   }
-  return <span className="text-[9px] font-bold text-gray-500 border border-gray-700 bg-gray-800 px-1.5 rounded">ORGÂNICO</span>;
+  return <span className="text-[9px] font-bold text-gray-600 border border-gray-200 bg-gray-50 px-1.5 rounded">ORGÂNICO</span>;
 }
 
 function StatusBadge({ funil, tipo }: { funil: string; tipo: string }) {
@@ -238,24 +402,24 @@ function StatusBadge({ funil, tipo }: { funil: string; tipo: string }) {
 
   if (t.includes("suporte")) {
     if (f.includes("resolvido")) {
-      return <Badge className="bg-blue-900/40 text-blue-300 border-blue-800">RESOLVIDO</Badge>;
+      return <Badge className="bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200">RESOLVIDO</Badge>;
     }
-    return <Badge className="bg-gray-700 text-gray-300 border-gray-600">EM ABERTO</Badge>;
+    return <Badge className="bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200">EM ABERTO</Badge>;
   }
 
   if (f.includes("vendido") || f.includes("matriculado")) {
-    return <Badge className="bg-green-600 text-white shadow-lg shadow-green-900/50">MATRICULADO</Badge>;
+    return <Badge className="bg-green-100 text-green-700 border border-green-200 hover:bg-green-200">MATRICULADO</Badge>;
   }
   if (f.includes("agendado")) {
-    return <Badge className="bg-blue-500 text-white shadow-lg shadow-blue-900/50">AGENDADO</Badge>;
+    return <Badge className="bg-sky-100 text-sky-700 border border-sky-200 hover:bg-sky-200">AGENDADO</Badge>;
   }
   if (f.includes("negociação") || f.includes("negociacao")) {
-    return <Badge className="bg-yellow-600/20 text-yellow-400 border-yellow-600/30">NEGOCIAÇÃO</Badge>;
+    return <Badge className="bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200">NEGOCIAÇÃO</Badge>;
   }
   if (f.includes("perdido")) {
-    return <Badge className="bg-red-600/20 text-red-400 border-red-600/30">PERDIDO</Badge>;
+    return <Badge className="bg-red-100 text-red-700 border border-red-200 hover:bg-red-200">PERDIDO</Badge>;
   }
-  return <Badge className="bg-gray-800 text-gray-400 border-gray-700">PENDENTE</Badge>;
+  return <Badge className="bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200">PENDENTE</Badge>;
 }
 
 function TemperaturaWidget({ temp }: { temp: string }) {

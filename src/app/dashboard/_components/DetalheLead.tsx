@@ -8,7 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, User, Target, Lightbulb } from "lucide-react";
+import { CheckCircle, XCircle, Clock, User, Lightbulb, Zap, MessageSquare, AlertTriangle, Sparkles } from "lucide-react";
 
 interface DetalheLeadProps {
   analise: AnaliseConversa;
@@ -29,50 +29,76 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
   const metrics = resultado?.metrics;
   const detalhesConversao = resultado?.detalhes_conversao;
 
+  // Origin badge colors
+  const getOrigemStyle = (o: string) => {
+    const ol = o.toLowerCase();
+    if (ol.includes("meta") || ol.includes("insta") || ol.includes("face")) {
+      return "bg-blue-500 text-white";
+    }
+    if (ol.includes("google")) {
+      return "bg-orange-500 text-white";
+    }
+    if (ol.includes("indica")) {
+      return "bg-purple-500 text-white";
+    }
+    return "bg-gray-500 text-white";
+  };
+
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="bg-[#0b0d11] border-gray-800 w-full sm:max-w-xl overflow-y-auto">
-        <SheetHeader className="border-b border-gray-800 pb-4">
-          <SheetTitle className="text-white flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#1c2128] border border-gray-700 flex items-center justify-center text-sm font-bold text-white">
-              {nome.substring(0, 2).toUpperCase()}
+      <SheetContent className="bg-gray-50 w-full sm:max-w-xl overflow-y-auto border-l-0 shadow-2xl p-0">
+        {/* Premium Header with Gradient */}
+        <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-6 text-white">
+          <SheetHeader className="space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-lg font-bold text-white shadow-lg">
+                {nome.substring(0, 2).toUpperCase()}
+              </div>
+              <div className="space-y-2 flex-1">
+                <SheetTitle className="text-xl font-bold text-white leading-none">
+                  {nome}
+                </SheetTitle>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] uppercase shadow-md ${getOrigemStyle(origem)}`}>
+                    {origem}
+                  </span>
+                  <span className="text-white/70 text-xs">•</span>
+                  <span className="text-white/80 text-xs">
+                    Vendedor: <span className="font-semibold text-white">{vendedor}</span>
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-lg font-bold">{nome}</p>
-              <p className="text-xs text-gray-500 font-normal">
-                Origem: {origem} • Vendedor: {vendedor}
-              </p>
-            </div>
-          </SheetTitle>
-        </SheetHeader>
+          </SheetHeader>
+        </div>
 
-        <div className="space-y-6 py-6">
+        <div className="space-y-5 p-6">
           {/* Resumo Executivo */}
-          <div className="space-y-2">
-            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-              <Target className="h-3 w-3" /> Resumo Executivo
+          <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100">
+            <h3 className="text-[11px] font-bold text-violet-600 uppercase tracking-widest flex items-center gap-2 mb-3">
+              <MessageSquare className="h-4 w-4" /> Resumo Executivo
             </h3>
-            <p className="text-sm text-gray-400 italic bg-[#161b22] p-4 rounded-lg border border-gray-800 leading-relaxed">
+            <p className="text-sm text-gray-700 italic leading-relaxed">
               &quot;{resumo}&quot;
             </p>
           </div>
 
           {/* Métricas */}
           {metrics && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#161b22] p-4 rounded-lg border border-gray-800">
-                <p className="text-[9px] text-gray-500 uppercase flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> 1ª Resposta
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-xl text-white shadow-lg">
+                <p className="text-[10px] text-blue-100 uppercase font-bold flex items-center gap-1.5 mb-1">
+                  <Zap className="h-3 w-3" /> 1ª Resposta
                 </p>
-                <p className="text-xl font-mono text-white mt-1">
+                <p className="text-2xl font-bold tracking-tight">
                   {metrics.tempo_primeira_resposta_texto || "--"}
                 </p>
               </div>
-              <div className="bg-[#161b22] p-4 rounded-lg border border-gray-800">
-                <p className="text-[9px] text-gray-500 uppercase flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> Cadência
+              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-xl text-white shadow-lg">
+                <p className="text-[10px] text-purple-100 uppercase font-bold flex items-center gap-1.5 mb-1">
+                  <Clock className="h-3 w-3" /> Cadência Média
                 </p>
-                <p className="text-xl font-mono text-white mt-1">
+                <p className="text-2xl font-bold tracking-tight">
                   {metrics.tempo_medio_resposta_texto || "--"}
                 </p>
               </div>
@@ -81,16 +107,15 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
 
           {/* Objeções */}
           {objecoes.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                Objeções Detectadas
+            <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100">
+              <h3 className="text-[11px] font-bold text-amber-600 uppercase tracking-widest flex items-center gap-2 mb-3">
+                <AlertTriangle className="h-4 w-4" /> Objeções Identificadas
               </h3>
               <div className="flex flex-wrap gap-2">
                 {objecoes.map((obj, i) => (
                   <Badge
                     key={i}
-                    variant="outline"
-                    className="bg-[#1c1c1c] border-gray-700 text-gray-400 text-xs"
+                    className="bg-amber-100 border-amber-300 text-amber-800 text-xs px-3 py-1.5 font-semibold rounded-lg"
                   >
                     {obj}
                   </Badge>
@@ -99,20 +124,20 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
             </div>
           )}
 
-          {/* Performance */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Performance - Side by Side on larger screens */}
+          <div className="grid grid-cols-1 gap-4">
             {pontosFortes.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-[10px] font-bold text-green-500 uppercase tracking-wider flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3" /> Pontos Fortes
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-5 border border-emerald-200 shadow-sm">
+                <h3 className="text-[11px] font-bold text-emerald-700 uppercase tracking-widest flex items-center gap-2 mb-3">
+                  <CheckCircle className="h-4 w-4" /> Pontos Fortes
                 </h3>
-                <ul className="space-y-2">
+                <ul className="space-y-2.5">
                   {pontosFortes.slice(0, 3).map((ponto, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-2 text-gray-400 text-xs"
+                      className="flex items-start gap-2.5 text-emerald-800 text-xs leading-relaxed"
                     >
-                      <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                       <span>{ponto}</span>
                     </li>
                   ))}
@@ -121,17 +146,17 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
             )}
 
             {pontosMelhoria.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-[10px] font-bold text-red-500 uppercase tracking-wider flex items-center gap-1">
-                  <XCircle className="h-3 w-3" /> Melhorias
+              <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-5 border border-red-200 shadow-sm">
+                <h3 className="text-[11px] font-bold text-red-700 uppercase tracking-widest flex items-center gap-2 mb-3">
+                  <XCircle className="h-4 w-4" /> Pontos de Melhoria
                 </h3>
-                <ul className="space-y-2">
+                <ul className="space-y-2.5">
                   {pontosMelhoria.slice(0, 3).map((ponto, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-2 text-gray-400 text-xs"
+                      className="flex items-start gap-2.5 text-red-800 text-xs leading-relaxed"
                     >
-                      <XCircle className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
                       <span>{ponto}</span>
                     </li>
                   ))}
@@ -140,32 +165,36 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
             )}
           </div>
 
-          {/* Próximo Passo */}
-          <div className="bg-blue-900/10 border border-blue-500/30 rounded-lg p-4">
-            <h3 className="text-[9px] font-bold text-blue-400 uppercase mb-2 flex items-center gap-1">
-              <Lightbulb className="h-3 w-3" /> Ação Sugerida
+          {/* Próximo Passo - Action Card */}
+          <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl p-5 shadow-lg text-white">
+            <h3 className="text-[10px] font-bold text-violet-200 uppercase mb-2 flex items-center gap-1.5">
+              <Lightbulb className="h-4 w-4 text-yellow-300" /> Ação Sugerida
             </h3>
-            <p className="text-sm text-gray-300">{proximoPasso}</p>
+            <p className="text-sm font-medium leading-relaxed">{proximoPasso}</p>
           </div>
 
-          {/* Detalhes da Conversão (se houver) */}
+          {/* Detalhes da Conversão */}
           {detalhesConversao && (
-            <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-lg text-center">
-              <p className="text-[10px] font-bold text-green-400 uppercase mb-1">
-                🎉 Detalhes da Conversão
-              </p>
-              <p className="text-sm text-gray-300">{detalhesConversao}</p>
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-5 rounded-xl text-center shadow-lg">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Sparkles className="h-5 w-5 text-yellow-300" />
+                <p className="text-[10px] font-bold text-emerald-100 uppercase">
+                  Detalhes do Fechamento
+                </p>
+              </div>
+              <p className="text-sm font-medium">{detalhesConversao}</p>
             </div>
           )}
 
-          {/* Info adicional */}
-          <div className="border-t border-gray-800 pt-4">
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <User className="h-3 w-3" />
-              <span>Responsável: {vendedor}</span>
-              <span>•</span>
-              <span>
-                {new Date(analise.created_at).toLocaleString("pt-BR")}
+          {/* Rodapé Metadata */}
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5" />
+                <span>Responsável: <span className="font-medium text-gray-700">{vendedor}</span></span>
+              </div>
+              <span className="font-mono text-[10px] opacity-70">
+                ID: {analise.id.substring(0, 8)} • {new Date(analise.created_at).toLocaleString("pt-BR")}
               </span>
             </div>
           </div>
