@@ -25,11 +25,11 @@ export function KPICards({ kpis }: KPICardsProps) {
             <h3 className="text-4xl font-bold tracking-tight">{kpis.totalLeads}</h3>
             <span className="text-xs font-medium bg-emerald-400/20 text-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-emerald-400/30">
               <ArrowUpRight className="h-3 w-3" />
-              {kpis.totalSuporte} novos
+              {kpis.leadsNovos} novos
             </span>
           </div>
           <p className="text-xs text-indigo-100 mt-2 opacity-80">
-            Oportunidades ativas no funil
+            Novos nos últimos {kpis.periodo} dias
           </p>
         </div>
       </Card>
@@ -77,7 +77,7 @@ export function KPICards({ kpis }: KPICardsProps) {
           <div className="flex items-baseline gap-2">
             <h3 className="text-4xl font-bold tracking-tight text-blue-950">{kpis.totalAgendado}</h3>
              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
-              Hoje
+              {kpis.periodo} dias
             </span>
           </div>
            <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">

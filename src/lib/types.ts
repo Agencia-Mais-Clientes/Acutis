@@ -66,11 +66,13 @@ export interface ConfigEmpresa {
 // Tipos para KPIs calculados
 export interface KPIs {
   totalLeads: number;
+  leadsNovos: number;        // Leads novos no período (baseado na data de entrada real)
   totalSuporte: number;
   totalVendido: number;
   totalAgendado: number;
   taxaSucesso: number;
   notaMedia: number;
+  periodo: number;           // Período em dias usado para cálculo
 }
 
 // Tipo para gargalos

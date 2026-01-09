@@ -50,7 +50,7 @@ export async function getAnalises(ownerId: string): Promise<AnaliseConversa[]> {
 }
 
 // Calcula KPIs do dashboard
-export async function getKPIs(ownerId: string): Promise<KPIs> {
+export async function getKPIs(ownerId: string, diasPeriodo: number = 7): Promise<KPIs> {
   const analises = await getAnalises(ownerId);
 
   const leadsVendas = analises.filter(
@@ -60,14 +60,55 @@ export async function getKPIs(ownerId: string): Promise<KPIs> {
     (a) => a.resultado_ia?.tipo_conversacao === "Suporte"
   );
 
+  // Data limite para o período
+  const dataLimite = new Date();
+  dataLimite.setDate(dataLimite.getDate() - diasPeriodo);
+
+  // Calcula leads novos baseado na data REAL de entrada (metrics.data_entrada_lead)
+  const leadsNovos = leadsVendas.filter((a) => {
+    const dataEntradaStr = a.resultado_ia?.metrics?.data_entrada_lead;
+    if (!dataEntradaStr) return false;
+    
+    // Parse da data no formato "DD/MM/YYYY, HH:mm"
+    const match = dataEntradaStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (!match) return false;
+    
+    const dataEntrada = new Date(
+      parseInt(match[3]),      // ano
+      parseInt(match[2]) - 1,  // mês (0-indexed)
+      parseInt(match[1])       // dia
+    );
+    
+    return dataEntrada >= dataLimite;
+  });
+
   const vendidos = leadsVendas.filter((a) => {
     const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
     return fase.includes("vendido") || fase.includes("matriculado");
   });
 
+  // Agendamentos no período (se tiver data_agendada, usa ela; senão usa created_at)
   const agendados = leadsVendas.filter((a) => {
     const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("agendado");
+    if (!fase.includes("agendado")) return false;
+    
+    // Tenta usar data real do agendamento se disponível
+    const dataAgendadaStr = a.resultado_ia?.dados_agendamento?.data_agendada;
+    if (dataAgendadaStr) {
+      const match = dataAgendadaStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if (match) {
+        const dataAgendada = new Date(
+          parseInt(match[3]),
+          parseInt(match[2]) - 1,
+          parseInt(match[1])
+        );
+        return dataAgendada >= dataLimite;
+      }
+    }
+    
+    // Fallback: usa data da análise
+    const dataAnalise = new Date(a.created_at);
+    return dataAnalise >= dataLimite;
   });
 
   const totalLeads = leadsVendas.length;
@@ -85,11 +126,13 @@ export async function getKPIs(ownerId: string): Promise<KPIs> {
 
   return {
     totalLeads,
+    leadsNovos: leadsNovos.length,
     totalSuporte: leadsSuporte.length,
     totalVendido: vendidos.length,
     totalAgendado: agendados.length,
     taxaSucesso,
     notaMedia,
+    periodo: diasPeriodo,
   };
 }
 
