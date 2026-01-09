@@ -37,6 +37,8 @@ export interface AnaliseConversa {
   owner: string;
   created_at: string;
   resultado_ia: ResultadoIA;
+  // Origem real do tracking (vem de lead_tracking, não da inferência IA)
+  origem_tracking?: "facebook_ads" | "instagram_ads" | "google_ads" | "organico" | null;
 }
 
 // Tipo para config_empresas

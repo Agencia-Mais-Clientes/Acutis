@@ -57,17 +57,21 @@ export function TabelaAuditoria({ analises }: TabelaAuditoriaProps) {
         matchFunil = funil.includes("perdido");
       }
 
-      // Origem filter (paid traffic)
-      const origem = a.resultado_ia?.dados_cadastrais?.origem_detectada?.toLowerCase() || "orgânico";
+      // Origem filter (usa origem_tracking real, não inferência da IA)
+      const origemTracking = a.origem_tracking?.toLowerCase() || null;
       let matchOrigem = filtroOrigem === "ALL";
       if (filtroOrigem === "META") {
-        matchOrigem = origem.includes("meta") || origem.includes("insta") || origem.includes("face");
+        // Meta = Facebook ou Instagram Ads
+        matchOrigem = origemTracking === "facebook_ads" || origemTracking === "instagram_ads";
       } else if (filtroOrigem === "GOOGLE") {
-        matchOrigem = origem.includes("google");
+        matchOrigem = origemTracking === "google_ads";
       } else if (filtroOrigem === "INDICACAO") {
-        matchOrigem = origem.includes("indica");
+        // Indicação não é detectada pelo webhook - usa inferência da IA
+        const origemIA = a.resultado_ia?.dados_cadastrais?.origem_detectada?.toLowerCase() || "";
+        matchOrigem = origemIA.includes("indica");
       } else if (filtroOrigem === "ORGANICO") {
-        matchOrigem = origem === "orgânico" || origem === "organico" || (!origem.includes("meta") && !origem.includes("google") && !origem.includes("indica"));
+        // Orgânico = não tem tracking OU origem_tracking é 'organico'
+        matchOrigem = origemTracking === "organico" || origemTracking === null;
       }
 
       // Temperatura filter
@@ -274,7 +278,9 @@ function LinhaTabela({
 }) {
   const resultado = analise.resultado_ia;
   const nome = resultado?.dados_cadastrais?.nome_lead || "Não identificado";
-  const origem = resultado?.dados_cadastrais?.origem_detectada || "Orgânico";
+  // Usa origem_tracking (real) ou fallback para inferência IA
+  const origemTracking = analise.origem_tracking;
+  const origem = origemTracking ? mapOrigemTracking(origemTracking) : (resultado?.dados_cadastrais?.origem_detectada || "Orgânico");
   const tipo = resultado?.tipo_conversacao || "Vendas";
   const funil = resultado?.funil_fase || "Pendente";
   const temp = resultado?.temperatura || "Frio";
@@ -382,17 +388,37 @@ function TipoBadge({ tipo }: { tipo: string }) {
   );
 }
 
+// Mapeia origem do tracking para texto de exibição
+function mapOrigemTracking(origem: string): string {
+  switch (origem) {
+    case "facebook_ads": return "Facebook";
+    case "instagram_ads": return "Instagram";
+    case "google_ads": return "Google";
+    case "organico": return "Orgânico";
+    default: return origem;
+  }
+}
+
 function OrigemBadge({ origem }: { origem: string }) {
   const o = origem.toLowerCase();
-  if (o.includes("meta") || o.includes("insta") || o.includes("face")) {
-    return <span className="text-[9px] font-bold text-blue-700 border border-blue-200 bg-blue-50 px-1.5 rounded">META</span>;
+  // Facebook ou Instagram (Meta)
+  if (o === "facebook" || o === "facebook_ads" || o.includes("insta")) {
+    const label = o.includes("insta") ? "INSTAGRAM" : "FACEBOOK";
+    return <span className="text-[9px] font-bold text-blue-700 border border-blue-200 bg-blue-50 px-1.5 rounded">{label}</span>;
   }
-  if (o.includes("google")) {
+  // Google Ads
+  if (o === "google" || o === "google_ads") {
     return <span className="text-[9px] font-bold text-orange-700 border border-orange-200 bg-orange-50 px-1.5 rounded">GOOGLE</span>;
   }
+  // Meta (genérico)
+  if (o.includes("meta") || o.includes("face")) {
+    return <span className="text-[9px] font-bold text-blue-700 border border-blue-200 bg-blue-50 px-1.5 rounded">META</span>;
+  }
+  // Indicação (IA)
   if (o.includes("indica")) {
     return <span className="text-[9px] font-bold text-purple-700 border border-purple-200 bg-purple-50 px-1.5 rounded">INDICAÇÃO</span>;
   }
+  // Orgânico (padrão)
   return <span className="text-[9px] font-bold text-gray-600 border border-gray-200 bg-gray-50 px-1.5 rounded">ORGÂNICO</span>;
 }
 

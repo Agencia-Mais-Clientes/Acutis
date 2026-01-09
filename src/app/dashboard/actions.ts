@@ -3,20 +3,50 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { AnaliseConversa, KPIs, Gargalo, ObjecaoRanking } from "@/lib/types";
 
-// Busca todas as análises do owner
+// Busca todas as análises do owner com origem real do tracking
 export async function getAnalises(ownerId: string): Promise<AnaliseConversa[]> {
-  const { data, error } = await supabaseAdmin
+  // Busca análises
+  const { data: analises, error: analisesError } = await supabaseAdmin
     .from("analises_conversas")
     .select("*")
     .eq("owner", ownerId)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Erro ao buscar análises:", error);
+  if (analisesError) {
+    console.error("Erro ao buscar análises:", analisesError);
     return [];
   }
 
-  return data as AnaliseConversa[];
+  if (!analises || analises.length === 0) {
+    return [];
+  }
+
+  // Busca origens do tracking para os chatids das análises
+  const chatids = analises.map(a => a.chatid);
+  const { data: trackings, error: trackingError } = await supabaseAdmin
+    .from("lead_tracking")
+    .select("chatid, origem")
+    .eq("owner", ownerId)
+    .in("chatid", chatids);
+
+  if (trackingError) {
+    // Se a tabela não existir ou der erro, retorna sem origem_tracking
+    console.log("Aviso: Não foi possível buscar lead_tracking:", trackingError.message);
+  }
+
+  // Cria mapa de chatid -> origem
+  const origemMap = new Map<string, string>();
+  if (trackings) {
+    trackings.forEach(t => {
+      origemMap.set(t.chatid, t.origem);
+    });
+  }
+
+  // Junta as análises com a origem do tracking
+  return analises.map(a => ({
+    ...a,
+    origem_tracking: origemMap.get(a.chatid) || null,
+  })) as AnaliseConversa[];
 }
 
 // Calcula KPIs do dashboard
