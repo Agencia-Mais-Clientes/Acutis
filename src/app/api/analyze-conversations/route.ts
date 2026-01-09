@@ -6,13 +6,14 @@ export const maxDuration = 60; // 60 segundos de timeout
 
 /**
  * POST /api/analyze-conversations
- * Endpoint para ser chamado pelo N8N
+ * Endpoint para ser chamado pelo N8N ou cron
  * 
  * Body opcional:
  * {
- *   "ownerId": "string",    // Se não informado, processa todas empresas
- *   "batchSize": 10,        // Limite de chats por execução
- *   "dryRun": false         // Se true, não salva no banco
+ *   "ownerId": "string",       // Se não informado, processa todas empresas
+ *   "batchSize": 10,           // Limite de chats por execução
+ *   "dryRun": false,           // Se true, não salva no banco
+ *   "origemFilter": "trafego_pago" | "organico" | "todos"  // Filtro de origem (default: usa config da empresa)
  * }
  */
 export async function POST(req: NextRequest) {
@@ -36,12 +37,17 @@ export async function POST(req: NextRequest) {
       // Body vazio é permitido
     }
 
-    const { ownerId, batchSize = 10, dryRun = false } = body;
+    const { ownerId, batchSize = 10, dryRun = false, origemFilter } = body;
 
-    console.log("[ANALYZE API] Iniciando processamento", { ownerId, batchSize, dryRun });
+    console.log("[ANALYZE API] Iniciando processamento", { 
+      ownerId, 
+      batchSize, 
+      dryRun,
+      origemFilter: origemFilter || "(usa config da empresa)"
+    });
 
-    // Executa processamento
-    const result = await processAllPendingChats(ownerId, batchSize, dryRun);
+    // Executa processamento com filtro de origem
+    const result = await processAllPendingChats(ownerId, batchSize, dryRun, origemFilter);
 
     console.log("[ANALYZE API] Processamento concluído", {
       processed: result.processed,

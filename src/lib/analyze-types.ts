@@ -1,5 +1,34 @@
 // Tipos para o serviço de análise de conversas
 
+// ============================================
+// Tipos para Tracking de Origem
+// ============================================
+
+// Tipos de origem de tráfego
+export type OrigemTrafego = "facebook_ads" | "instagram_ads" | "google_ads" | "organico";
+
+// Filtros de origem para análise
+export type OrigemFilter = "trafego_pago" | "organico" | "todos";
+
+// Estrutura da tabela lead_tracking
+export interface LeadTracking {
+  id: number;
+  chatid: string;
+  owner: string;
+  origem: OrigemTrafego;
+  campanha_id: string | null;
+  source_app: string | null;
+  ctwa_clid: string | null;
+  ad_body: string | null;
+  ad_title: string | null;
+  primeira_mensagem: string | null;
+  detected_at: string;
+}
+
+// ============================================
+// Tipos para Mensagens
+// ============================================
+
 // Estrutura da tabela mensagens_clientes
 export interface MensagemCliente {
   id: number;
@@ -30,6 +59,10 @@ export interface TranscricaoFormatada {
   };
 }
 
+// ============================================
+// Tipos para Configuração de Empresa
+// ============================================
+
 // Config empresa (extendido)
 export interface ConfigEmpresa {
   owner: string;
@@ -38,8 +71,13 @@ export interface ConfigEmpresa {
   objetivo_conversao: string;
   created_at: string;
   ativo?: boolean;
-  instrucoes_ia?: string; // Instruções personalizadas para a IA (opcional)
+  instrucoes_ia?: string;              // Instruções personalizadas para a IA
+  analise_origem_filter?: OrigemFilter; // Filtro de origem para análise (default: trafego_pago)
 }
+
+// ============================================
+// Tipos para API de Análise
+// ============================================
 
 // Response do endpoint
 export interface AnalyzeResponse {
@@ -55,7 +93,8 @@ export interface AnalyzeResponse {
 
 // Request do endpoint
 export interface AnalyzeRequest {
-  ownerId?: string;  // Se não informado, processa todas empresas ativas
-  batchSize?: number; // Limite de chats por execução (default: 10)
-  dryRun?: boolean;   // Se true, não salva no banco
+  ownerId?: string;          // Se não informado, processa todas empresas ativas
+  batchSize?: number;        // Limite de chats por execução (default: 10)
+  dryRun?: boolean;          // Se true, não salva no banco
+  origemFilter?: OrigemFilter; // Filtro de origem (default: usa config da empresa)
 }

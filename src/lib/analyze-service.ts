@@ -8,8 +8,16 @@ import type {
   ChatAtivo,
   TranscricaoFormatada,
   ConfigEmpresa,
+  OrigemFilter,
 } from "@/lib/analyze-types";
 import type { ResultadoIA } from "@/lib/types";
+
+// ============================================
+// CONSTANTES
+// ============================================
+
+// Origens consideradas como tráfego pago
+const ORIGENS_TRAFEGO_PAGO = ["facebook_ads", "instagram_ads", "google_ads"];
 
 // ============================================
 // UTILITÁRIOS
@@ -113,11 +121,51 @@ export async function getActiveChatsWithoutAnalysis(
 
 /**
  * Fallback usando queries Supabase normais
+ * Suporta filtro por origem de tráfego
  */
 async function getActiveChatsWithoutAnalysisFallback(
   ownerId?: string,
-  limit = 50
+  limit = 50,
+  origemFilter: OrigemFilter = "todos"
 ): Promise<ChatAtivo[]> {
+  // Se filtrar por origem, primeiro buscar chatids elegíveis no lead_tracking
+  let chatidsElegiveis: string[] | null = null;
+  
+  if (origemFilter !== "todos") {
+    const origensPermitidas = origemFilter === "trafego_pago" 
+      ? ORIGENS_TRAFEGO_PAGO 
+      : ["organico"];
+    
+    let trackingQuery = supabaseAdmin
+      .from("lead_tracking")
+      .select("chatid")
+      .in("origem", origensPermitidas);
+    
+    if (ownerId) {
+      trackingQuery = trackingQuery.eq("owner", ownerId);
+    }
+    
+    const { data: trackedChats, error: trackingError } = await trackingQuery;
+    
+    if (trackingError) {
+      console.error("[ANALYZE] Erro ao buscar lead_tracking:", trackingError);
+      // Se a tabela não existir ainda, ignora o filtro
+      if (!trackingError.message?.includes("does not exist")) {
+        return [];
+      }
+    } else if (trackedChats) {
+      chatidsElegiveis = trackedChats.map(c => c.chatid);
+      
+      // Se não há chats elegíveis, retorna vazio
+      if (chatidsElegiveis.length === 0) {
+        console.log(`[ANALYZE] Nenhum chat com origem '${origemFilter}' encontrado`);
+        return [];
+      }
+      
+      console.log(`[ANALYZE] ${chatidsElegiveis.length} chats com origem '${origemFilter}'`);
+    }
+  }
+
   // Busca mensagens dos últimos 30 dias
   let query = supabaseAdmin
     .from("mensagens_clientes")
@@ -129,6 +177,11 @@ async function getActiveChatsWithoutAnalysisFallback(
 
   if (ownerId) {
     query = query.eq("owner", ownerId);
+  }
+  
+  // Aplica filtro de chatids elegíveis se existir
+  if (chatidsElegiveis !== null) {
+    query = query.in("chatid", chatidsElegiveis);
   }
 
   const { data: mensagens, error } = await query;
@@ -148,6 +201,11 @@ async function getActiveChatsWithoutAnalysisFallback(
 
   // Filtra quem já tem análise nas últimas 24h
   const chatids = Array.from(chatsUnicos.keys());
+  
+  if (chatids.length === 0) {
+    return [];
+  }
+  
   const { data: analisesRecentes } = await supabaseAdmin
     .from("analises_conversas")
     .select("chatid")
@@ -508,11 +566,16 @@ export async function processChat(
 
 /**
  * Processa todos os chats pendentes
+ * @param ownerId - ID do owner específico (opcional)
+ * @param batchSize - Limite de chats por empresa (default: 10)
+ * @param dryRun - Se true, não salva no banco
+ * @param origemFilterOverride - Força filtro de origem (ignora config da empresa)
  */
 export async function processAllPendingChats(
   ownerId?: string,
   batchSize = 10,
-  dryRun = false
+  dryRun = false,
+  origemFilterOverride?: OrigemFilter
 ): Promise<{
   processed: number;
   errors: number;
@@ -526,7 +589,7 @@ export async function processAllPendingChats(
 
   // Busca empresas
   const companies = ownerId
-    ? [{ owner: ownerId, nome_empresa: "", nicho: "", objetivo_conversao: "", created_at: "" }]
+    ? [{ owner: ownerId, nome_empresa: "", nicho: "", objetivo_conversao: "", created_at: "" } as ConfigEmpresa]
     : await getActiveCompanies();
 
   if (ownerId) {
@@ -545,8 +608,16 @@ export async function processAllPendingChats(
   console.log(`[ANALYZE] Processando ${companies.length} empresa(s)`);
 
   for (const company of companies) {
-    // Busca chats pendentes
-    const chats = await getActiveChatsWithoutAnalysis(company.owner, batchSize);
+    // Determina filtro de origem: override > config empresa > default (trafego_pago)
+    const origemFilter: OrigemFilter = 
+      origemFilterOverride || 
+      company.analise_origem_filter || 
+      "trafego_pago";
+    
+    console.log(`[ANALYZE] Empresa ${company.nome_empresa}: filtro de origem = '${origemFilter}'`);
+    
+    // Busca chats pendentes (com filtro de origem)
+    const chats = await getActiveChatsWithoutAnalysisFallback(company.owner, batchSize, origemFilter);
     console.log(`[ANALYZE] Empresa ${company.nome_empresa}: ${chats.length} chats pendentes`);
 
     for (const chat of chats) {
