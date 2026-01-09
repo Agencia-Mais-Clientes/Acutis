@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Bot } from "lucide-react";
+import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 interface CompanyFormProps {
@@ -52,80 +52,94 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
-      <Card className="bg-[#0b0d11] border-gray-800">
-        <CardHeader>
-          <CardTitle className="text-white text-lg">Dados da Empresa</CardTitle>
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
+      {/* Dados da Empresa */}
+      <Card className="bg-white border border-gray-100 shadow-lg rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gray-50 border-b border-gray-100 px-6 py-4">
+          <CardTitle className="text-gray-900 text-lg flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-violet-600" />
+            Dados da Empresa
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Owner (WhatsApp) */}
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5 uppercase font-bold">
-              WhatsApp (Owner) *
-            </label>
-            <Input
-              name="owner"
-              value={formData.owner}
-              onChange={handleChange}
-              placeholder="5511999999999"
-              className="bg-[#161b22] border-gray-700 text-white"
-              required
-              disabled={isEditing}
-            />
-            <p className="text-xs text-gray-600 mt-1">
-              Número sem + e sem espaços (ex: 5511999999999)
-            </p>
+        <CardContent className="p-6 space-y-5">
+          {/* Grid responsivo de 2 colunas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Owner (WhatsApp) */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <Phone className="h-3.5 w-3.5" />
+                WhatsApp (Owner) *
+              </label>
+              <Input
+                name="owner"
+                value={formData.owner}
+                onChange={handleChange}
+                placeholder="5511999999999"
+                className="bg-gray-50 border-gray-200 text-gray-900 focus:border-violet-500 focus:ring-violet-500"
+                required
+                disabled={isEditing}
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                Número sem + e sem espaços (ex: 5511999999999)
+              </p>
+            </div>
+
+            {/* Nome da Empresa */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <Building2 className="h-3.5 w-3.5" />
+                Nome da Empresa *
+              </label>
+              <Input
+                name="nome_empresa"
+                value={formData.nome_empresa}
+                onChange={handleChange}
+                placeholder="Academia Xtreme Fitness"
+                className="bg-gray-50 border-gray-200 text-gray-900 focus:border-violet-500 focus:ring-violet-500"
+                required
+              />
+            </div>
           </div>
 
-          {/* Nome da Empresa */}
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5 uppercase font-bold">
-              Nome da Empresa *
-            </label>
-            <Input
-              name="nome_empresa"
-              value={formData.nome_empresa}
-              onChange={handleChange}
-              placeholder="Academia Xtreme Fitness"
-              className="bg-[#161b22] border-gray-700 text-white"
-              required
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Nicho */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <Sparkles className="h-3.5 w-3.5" />
+                Nicho
+              </label>
+              <Input
+                name="nicho"
+                value={formData.nicho}
+                onChange={handleChange}
+                placeholder="Academia, Clínica de Estética, ..."
+                className="bg-gray-50 border-gray-200 text-gray-900 focus:border-violet-500 focus:ring-violet-500"
+              />
+            </div>
 
-          {/* Nicho */}
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5 uppercase font-bold">
-              Nicho
-            </label>
-            <Input
-              name="nicho"
-              value={formData.nicho}
-              onChange={handleChange}
-              placeholder="Academia, Clínica de Estética, ..."
-              className="bg-[#161b22] border-gray-700 text-white"
-            />
-          </div>
-
-          {/* Objetivo de Conversão */}
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5 uppercase font-bold">
-              Objetivo de Conversão
-            </label>
-            <Input
-              name="objetivo_conversao"
-              value={formData.objetivo_conversao}
-              onChange={handleChange}
-              placeholder="Agendar aula experimental"
-              className="bg-[#161b22] border-gray-700 text-white"
-            />
-            <p className="text-xs text-gray-600 mt-1">
-              O que a IA deve considerar como &quot;sucesso&quot;
-            </p>
+            {/* Objetivo de Conversão */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <Target className="h-3.5 w-3.5" />
+                Objetivo de Conversão
+              </label>
+              <Input
+                name="objetivo_conversao"
+                value={formData.objetivo_conversao}
+                onChange={handleChange}
+                placeholder="Agendar aula experimental"
+                className="bg-gray-50 border-gray-200 text-gray-900 focus:border-violet-500 focus:ring-violet-500"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                O que a IA deve considerar como &quot;sucesso&quot;
+              </p>
+            </div>
           </div>
 
           {/* Token UazAPI */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1.5 uppercase font-bold">
+            <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+              <Key className="h-3.5 w-3.5" />
               Token UazAPI (WhatsApp)
             </label>
             <Input
@@ -133,9 +147,9 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
               value={formData.instance_token}
               onChange={handleChange}
               placeholder="Token da instância no UazAPI"
-              className="bg-[#161b22] border-gray-700 text-white font-mono text-sm"
+              className="bg-gray-50 border-gray-200 text-gray-900 font-mono text-sm focus:border-violet-500 focus:ring-violet-500"
             />
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-gray-400 mt-1.5">
               Token gerado pelo UazAPI para verificar status da conexão. Deixe vazio se não usar.
             </p>
           </div>
@@ -143,16 +157,16 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
       </Card>
 
       {/* Instruções IA */}
-      <Card className="bg-[#0b0d11] border-gray-800">
-        <CardHeader>
-          <CardTitle className="text-white text-lg flex items-center gap-2">
-            <Bot className="h-5 w-5 text-purple-400" />
+      <Card className="bg-white border border-gray-100 shadow-lg rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-violet-50 to-indigo-50 border-b border-violet-100 px-6 py-4">
+          <CardTitle className="text-gray-900 text-lg flex items-center gap-2">
+            <Bot className="h-5 w-5 text-violet-600" />
             Instruções Personalizadas para IA
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <div className="space-y-2">
-            <label htmlFor="instrucoes_ia" className="text-white">
+            <label htmlFor="instrucoes_ia" className="text-sm font-medium text-gray-700">
               Instruções Customizadas da IA
             </label>
             <Textarea
@@ -161,9 +175,9 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
               value={formData.instrucoes_ia}
               onChange={handleChange}
               placeholder={`Ex: "Esta é uma clínica de estética. Foque sempre em agendar avaliação gratuita. Se o cliente perguntar preço, não fale, peça para agendar. Seja rigoroso com o script de vendas."`}
-              className="bg-[#161b22] border-gray-700 text-white min-h-[150px]"
+              className="bg-gray-50 border-gray-200 text-gray-900 min-h-[150px] focus:border-violet-500 focus:ring-violet-500"
             />
-            <p className="text-xs text-gray-600 mt-2">
+            <p className="text-xs text-gray-400 mt-2">
                Essas instruções serão injetadas no prompt da IA ao analisar as conversas desta empresa.
                Deixe em branco para usar o comportamento padrão.
             </p>
@@ -173,20 +187,24 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
 
       {/* Erros */}
       {error && (
-        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-          {error}
+        <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-2">
+          <span className="font-medium">Erro:</span> {error}
         </div>
       )}
 
       {/* Botões */}
-      <div className="flex items-center justify-between">
-        <Link href="/admin/empresas">
-          <Button type="button" variant="ghost" className="text-gray-400">
+      <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+        <Link href="/admin/empresas" className="w-full sm:w-auto">
+          <Button type="button" variant="outline" className="w-full sm:w-auto text-gray-600">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar
           </Button>
         </Link>
-        <Button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700">
+        <Button 
+          type="submit" 
+          disabled={loading} 
+          className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/20"
+        >
           <Save className="mr-2 h-4 w-4" />
           {loading ? "Salvando..." : isEditing ? "Atualizar" : "Criar Empresa"}
         </Button>
