@@ -35,8 +35,8 @@ function sleep(ms: number): Promise<void> {
  */
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  maxRetries = 3,
-  baseDelayMs = 2000
+  maxRetries = 5,
+  baseDelayMs = 5000
 ): Promise<T> {
   let lastError: Error | null = null;
 
@@ -123,7 +123,7 @@ export async function getActiveChatsWithoutAnalysis(
  * Fallback usando queries Supabase normais
  * Suporta filtro por origem de tráfego
  */
-async function getActiveChatsWithoutAnalysisFallback(
+export async function getActiveChatsWithoutAnalysisFallback(
   ownerId?: string,
   limit = 50,
   origemFilter: OrigemFilter = "todos"
@@ -413,8 +413,12 @@ ${transcription.transcricao}
    - **"Resolvido"**: Dúvida sanada, solicitação atendida.
    - **"Em Atendimento"**: Ainda pendente ou aguardando retorno.
 
-3. **ORIGEM DO LEAD (Rastreamento):**
-   - Procure pistas: "Vi no Insta/Face" (Meta), "Vi no Google" (Google), "Indicação" (Indicação). Se não achar, "Orgânico".
+3. **ORIGEM DO LEAD (Rastreamento) - ATENÇÃO ESPECIAL:**
+   - **Meta (Facebook/Instagram Ads)**: Cliente menciona "anúncio", "propaganda", "vi no Instagram", "vi no Facebook", "apareceu pra mim", "vi na rede social", "vi no feed". QUALQUER menção a anúncio = **Meta**.
+   - **Google (Google Ads)**: Cliente menciona "pesquisei no Google", "achei no Google", "vi no Google".
+   - **Indicação**: Cliente menciona "indicação", "minha amiga falou", "fulano recomendou".
+   - **Orgânico**: SOMENTE se não houver NENHUMA pista das anteriores. Se o cliente menciona "anúncio" ou "propaganda" em qualquer contexto, NÃO é orgânico.
+   - **REGRA CRÍTICA**: Se houver QUALQUER menção a "anúncio", "propaganda", "vi" + rede social = origem é **Meta** ou **Google**, NUNCA Orgânico.
 
 4. **ANÁLISE QUALITATIVA:**
    - **Objeções:** Liste barreiras reais (Preço, Horário, Local, Decisor). Se for Suporte, liste o Problema.
@@ -628,8 +632,8 @@ export async function processAllPendingChats(
       else if (result.status === "error") errors++;
       else skipped++;
 
-      // Rate limiting: espera 2 segundos entre cada análise (evita rate limit da API)
-      await sleep(2000);
+      // Rate limiting: espera 5 segundos entre cada análise (evita rate limit da API)
+      await sleep(5000);
     }
   }
 

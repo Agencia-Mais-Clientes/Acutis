@@ -16,11 +16,24 @@ interface DetalheLeadProps {
   onClose: () => void;
 }
 
+// Mapeia origem do tracking para texto de exibição
+function mapOrigemTracking(origem: string): string {
+  switch (origem) {
+    case "facebook_ads": return "Meta";
+    case "instagram_ads": return "Meta";
+    case "google_ads": return "Google";
+    case "organico": return "Orgânico";
+    default: return origem;
+  }
+}
+
 export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
   const resultado = analise.resultado_ia;
   const nome = resultado?.dados_cadastrais?.nome_lead || "Não identificado";
   const vendedor = resultado?.dados_cadastrais?.nome_vendedor || "Atendente";
-  const origem = resultado?.dados_cadastrais?.origem_detectada || "Orgânico";
+  // Usa origem_tracking (real do tracking) ou fallback para inferência IA
+  const origemTracking = analise.origem_tracking;
+  const origem = origemTracking ? mapOrigemTracking(origemTracking) : (resultado?.dados_cadastrais?.origem_detectada || "Orgânico");
   const resumo = resultado?.resumo_executivo || "Sem resumo disponível";
   const proximoPasso = resultado?.proximo_passo_sugerido || "Acompanhar o lead";
   const objecoes = resultado?.objecoes_detectadas || [];
