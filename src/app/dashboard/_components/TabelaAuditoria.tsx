@@ -333,9 +333,13 @@ function LinhaTabela({
       </td>
       <td className="p-4">
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-foreground tabular-nums">{data}</span>
-          <span className="text-[10px] text-muted-foreground">
-            {new Date(analise.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Entrada</span>
+          <span className="text-sm font-medium text-foreground tabular-nums">
+            {resultado?.metrics?.data_entrada_lead || data}
+          </span>
+          <span className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wide">Análise</span>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {data} {new Date(analise.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
       </td>

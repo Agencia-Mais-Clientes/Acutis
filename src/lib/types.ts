@@ -13,6 +13,8 @@ export interface PerformanceVendas {
 export interface Metrics {
   tempo_primeira_resposta_texto: string;
   tempo_medio_resposta_texto: string;
+  data_entrada_lead?: string;    // Data de entrada do lead
+  data_ultima_mensagem?: string; // Data da última mensagem analisada
 }
 
 export interface ResultadoIA {
@@ -28,6 +30,17 @@ export interface ResultadoIA {
   dados_cadastrais: DadosCadastrais;
   performance_vendas: PerformanceVendas;
   metrics: Metrics;
+  // Dados de conversão extraídos
+  dados_agendamento?: {
+    data_agendada: string | null;
+    tipo_agendamento: string | null;
+  };
+  dados_venda?: {
+    plano: string | null;
+    valor: number | null;
+    forma_pagamento: string | null;
+    tempo_contrato: string | null;
+  };
 }
 
 // Tipo para a tabela analises_conversas

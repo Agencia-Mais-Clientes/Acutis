@@ -53,6 +53,8 @@ export interface TranscricaoFormatada {
   primeiroId: number;
   ultimoId: number;
   transcricao: string;
+  data_entrada_lead: string;  // Data/hora da primeira mensagem do lead
+  data_ultima_mensagem: string; // Data/hora da última mensagem
   metrics: {
     tempo_primeira_resposta_texto: string;
     tempo_medio_resposta_texto: string;

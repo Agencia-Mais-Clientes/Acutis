@@ -263,6 +263,41 @@ export async function getNewMessages(
   return data as MensagemCliente[];
 }
 
+/**
+ * Busca a data de entrada real do lead (primeira mensagem de todas)
+ */
+export async function getLeadEntryDate(chatId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
+    .from("mensagens_clientes")
+    .select("recebido_em, timestamp_ms, timestamp")
+    .eq("chatid", chatId)
+    .order("id", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  // Prioriza timestamp_ms/timestamp, fallback para recebido_em
+  let dataEntrada: Date;
+  if (data.timestamp_ms || data.timestamp) {
+    let ts = Number(data.timestamp_ms || data.timestamp);
+    if (ts < 10000000000) ts *= 1000; // Converte segundos para ms
+    dataEntrada = new Date(ts);
+  } else {
+    dataEntrada = new Date(data.recebido_em);
+  }
+
+  return dataEntrada.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 // ============================================
 // FORMATAÇÃO
 // ============================================
@@ -355,11 +390,40 @@ export function formatTranscription(
   const soma = temposDeResposta.reduce((a, b) => a + b, 0);
   const media = temposDeResposta.length > 0 ? soma / temposDeResposta.length : 0;
 
+  // Extrai datas da primeira e última mensagem
+  const primeiraMsg = sortedMsgs[0];
+  const ultimaMsg = sortedMsgs[sortedMsgs.length - 1];
+  
+  const timestampEntrada = getTimestamp(primeiraMsg);
+  const timestampUltima = getTimestamp(ultimaMsg);
+  
+  const dataEntradaLead = timestampEntrada 
+    ? new Date(timestampEntrada).toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "Desconhecida";
+    
+  const dataUltimaMensagem = timestampUltima
+    ? new Date(timestampUltima).toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "Desconhecida";
+
   return {
     chatid,
     primeiroId,
     ultimoId,
     transcricao,
+    data_entrada_lead: dataEntradaLead,
+    data_ultima_mensagem: dataUltimaMensagem,
     metrics: {
       tempo_primeira_resposta_texto: formatTime(firstResponseTime),
       tempo_medio_resposta_texto: formatTime(media),
@@ -389,6 +453,8 @@ Contexto: Empresa **${config.nome_empresa || "Cliente"}** (Nicho: ${config.nicho
 Objetivo de Conversão: ${config.objetivo_conversao || "Vendas"}
 ${instrucoesCustomizadas}
 # DADOS TÉCNICOS
+- **Data de Entrada do Lead**: ${transcription.data_entrada_lead}
+- **Data desta Análise / Última Mensagem**: ${transcription.data_ultima_mensagem}
 - 1ª Resposta: ${transcription.metrics.tempo_primeira_resposta_texto}
 - Cadência: ${transcription.metrics.tempo_medio_resposta_texto}
 
@@ -420,9 +486,33 @@ ${transcription.transcricao}
    - **Orgânico**: SOMENTE se não houver NENHUMA pista das anteriores. Se o cliente menciona "anúncio" ou "propaganda" em qualquer contexto, NÃO é orgânico.
    - **REGRA CRÍTICA**: Se houver QUALQUER menção a "anúncio", "propaganda", "vi" + rede social = origem é **Meta** ou **Google**, NUNCA Orgânico.
 
-4. **ANÁLISE QUALITATIVA:**
-   - **Objeções:** Liste barreiras reais (Preço, Horário, Local, Decisor). Se for Suporte, liste o Problema.
+4. **ANÁLISE QUALITATIVA (APENAS PARA VENDAS):**
+   - **Objeções:** Liste barreiras reais (Preço, Horário, Local, Decisor).
    - **Ação Sugerida:** O que o atendente deve fazer a seguir?
+
+5. **REGRA CRÍTICA DE FEEDBACK (VENDAS):**
+   - **pontos_fortes**: SOMENTE preenche se funil_fase = "Vendido" ou "Agendado" (houve conversão real).
+   - Se "Em Negociação" ou "Perdido": pontos_fortes = [] (array vazio). Foco total nos erros.
+   - **pontos_melhoria**: SEMPRE liste os pontos fracos, erros e o que precisa melhorar. Seja direto e crítico.
+   - O objetivo é bater onde a pessoa errou. Só elogiamos quando teve resultado concreto.
+
+6. **REGRA PARA SUPORTE:**
+   - Se tipo_conversacao = "Suporte": análise SIMPLIFICADA.
+   - Suporte não é foco de vendas, então:
+     - temperatura: "N/A"
+     - objecoes_detectadas: [] ou apenas o problema relatado
+     - performance_vendas: { "pontos_fortes": [], "pontos_melhoria": [] }
+     - nota_atendimento_0_100: 0 (não avaliar)
+   - Apenas preencha resumo_executivo com descrição breve do atendimento.
+
+7. **EXTRAÇÃO DE DADOS DE CONVERSÃO (IMPORTANTE):**
+   - Se funil_fase = "Agendado": extraia a DATA/HORA do agendamento mencionada na conversa.
+   - Se funil_fase = "Vendido": extraia TODOS os detalhes da venda mencionados:
+     - **plano**: Qual plano fechou (anual, mensal, trimestral, etc.)
+     - **valor**: Valor em R$ mencionado
+     - **forma_pagamento**: Cartão, PIX, boleto, dinheiro, etc.
+     - **tempo_contrato**: Período do plano (12 meses, 6 meses, etc.)
+   - Se NÃO mencionaram esses dados na conversa, deixe como null.
 
 # OUTPUT JSON
 Responda APENAS com JSON válido, sem formatação markdown:
@@ -433,16 +523,26 @@ Responda APENAS com JSON válido, sem formatação markdown:
     "nome_vendedor": "string/null",
     "origem_detectada": "Meta" | "Google" | "Indicação" | "Orgânico"
   },
-  "temperatura": "Quente" | "Morno" | "Frio",
+  "temperatura": "Quente" | "Morno" | "Frio" | "N/A",
   "objecoes_detectadas": ["string"],
   "proximo_passo_sugerido": "string",
   "resumo_executivo": "string",
   "funil_fase": "Status conforme regra acima",
   "conversao_realizada": boolean,
   "detalhes_conversao": "string/null",
+  "dados_agendamento": {
+    "data_agendada": "string/null (ex: '10/01/2026 às 14h')",
+    "tipo_agendamento": "string/null (ex: 'Aula experimental', 'Visita', 'Reunião')"
+  },
+  "dados_venda": {
+    "plano": "string/null (ex: 'Anual recorrente', 'Mensal')",
+    "valor": "number/null (valor numérico em reais)",
+    "forma_pagamento": "string/null (ex: 'Cartão crédito', 'PIX', 'Boleto')",
+    "tempo_contrato": "string/null (ex: '12 meses', '6 meses')"
+  },
   "performance_vendas": {
-    "pontos_fortes": ["string"],
-    "pontos_melhoria": ["string"]
+    "pontos_fortes": ["Só se Vendido/Agendado, senão []"],
+    "pontos_melhoria": ["Sempre liste os erros - seja crítico e direto"]
   },
   "nota_atendimento_0_100": 0
 }`;
@@ -463,8 +563,12 @@ Responda APENAS com JSON válido, sem formatação markdown:
 
     const resultado = JSON.parse(cleanJson) as ResultadoIA;
 
-    // Injeta métricas
-    resultado.metrics = transcription.metrics;
+    // Injeta métricas com datas
+    resultado.metrics = {
+      ...transcription.metrics,
+      data_entrada_lead: transcription.data_entrada_lead,
+      data_ultima_mensagem: transcription.data_ultima_mensagem,
+    };
 
     return resultado;
   }, 3, 2000).catch((error) => {
@@ -540,6 +644,12 @@ export async function processChat(
     const resultado = await analyzeConversation(transcription, config);
     if (!resultado) {
       return { status: "error", message: "Falha na análise IA" };
+    }
+
+    // 4.1 Busca data REAL de entrada do lead (primeira mensagem de todas)
+    const dataEntradaReal = await getLeadEntryDate(chat.chatid);
+    if (dataEntradaReal && resultado.metrics) {
+      resultado.metrics.data_entrada_lead = dataEntradaReal;
     }
 
     // 5. Salva no banco
