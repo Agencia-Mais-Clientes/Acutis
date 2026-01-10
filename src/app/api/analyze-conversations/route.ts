@@ -37,7 +37,16 @@ export async function POST(req: NextRequest) {
       // Body vazio é permitido
     }
 
-    const { ownerId, batchSize = 10, dryRun = false, origemFilter } = body;
+    // Lê parâmetros da URL (prioridade sobre body)
+    const url = new URL(req.url);
+    const urlOwnerId = url.searchParams.get("owner") || body.ownerId;
+    const urlBatchSize = url.searchParams.get("limit");
+    const urlOrigemFilter = url.searchParams.get("origemFilter") as "trafego_pago" | "organico" | "todos" | null;
+    
+    const ownerId = urlOwnerId;
+    const batchSize = urlBatchSize ? parseInt(urlBatchSize) : (body.batchSize || 10);
+    const dryRun = body.dryRun || false;
+    const origemFilter = urlOrigemFilter || body.origemFilter;
 
     console.log("[ANALYZE API] Iniciando processamento", { 
       ownerId, 

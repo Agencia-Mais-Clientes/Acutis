@@ -166,14 +166,16 @@ export async function getActiveChatsWithoutAnalysisFallback(
     }
   }
 
-  // Busca mensagens dos últimos 30 dias
+  // Busca mensagens desde 01/11/2025
+  const dataInicio = new Date("2025-11-01T00:00:00Z");
   let query = supabaseAdmin
     .from("mensagens_clientes")
     .select("owner, chatid")
-    .gte("recebido_em", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+    .gte("recebido_em", dataInicio.toISOString())
     .not("chatid", "like", "%@g.us")
     .not("chatid", "is", null)
-    .neq("chatid", "");
+    .neq("chatid", "")
+    .limit(10000); // Aumenta limite para pegar todos os chats
 
   if (ownerId) {
     query = query.eq("owner", ownerId);
@@ -296,6 +298,34 @@ export async function getLeadEntryDate(chatId: string): Promise<string | null> {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/**
+ * Busca a origem do lead no tracking (tráfego pago)
+ * Retorna a origem se existir, ou null se não tiver tracking
+ */
+export async function getLeadOrigin(chatId: string, owner: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
+    .from("lead_tracking")
+    .select("origem")
+    .eq("chatid", chatId)
+    .eq("owner", owner)
+    .limit(1)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data.origem;
+}
+
+/**
+ * Verifica se a origem é de tráfego pago
+ */
+export function isTrafegoPago(origem: string | null): boolean {
+  if (!origem) return false;
+  return ["facebook_ads", "instagram_ads", "google_ads"].includes(origem);
 }
 
 // ============================================
@@ -650,6 +680,15 @@ export async function processChat(
     const dataEntradaReal = await getLeadEntryDate(chat.chatid);
     if (dataEntradaReal && resultado.metrics) {
       resultado.metrics.data_entrada_lead = dataEntradaReal;
+    }
+
+    // 4.2 Se veio de tráfego pago, FORÇA tipo_conversacao = "Vendas"
+    const origemLead = await getLeadOrigin(chat.chatid, chat.owner);
+    if (isTrafegoPago(origemLead)) {
+      if (resultado.tipo_conversacao !== "Vendas") {
+        console.log(`[ANALYZE] ⚠️ Lead ${chat.chatid} veio de tráfego pago (${origemLead}), forçando tipo = "Vendas" (era: ${resultado.tipo_conversacao})`);
+        resultado.tipo_conversacao = "Vendas";
+      }
     }
 
     // 5. Salva no banco

@@ -228,7 +228,8 @@ export function TabelaAuditoria({ analises }: TabelaAuditoriaProps) {
             <table className="w-full text-left bg-white">
               <thead>
                 <tr className="border-b border-border bg-white text-muted-foreground text-[10px] uppercase tracking-wider font-semibold">
-                  <th className="p-4 pl-6">Lead / Origem</th>
+                  <th className="p-4 pl-6">Lead</th>
+                  <th className="p-4">Canal</th>
                   <th className="p-4">Data</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Temp.</th>
@@ -239,7 +240,7 @@ export function TabelaAuditoria({ analises }: TabelaAuditoriaProps) {
               <tbody className="text-sm divide-y divide-border/50">
                 {analisesFiltradas.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-16 text-center text-muted-foreground text-xs bg-muted/5">
+                    <td colSpan={7} className="p-16 text-center text-muted-foreground text-xs bg-muted/5">
                       Nenhum registro encontrado com os filtros selecionados
                     </td>
                   </tr>
@@ -323,13 +324,14 @@ function LinhaTabela({
               </span>
               <TipoBadge tipo={tipo} />
             </div>
-            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+            <div className="text-xs text-muted-foreground mt-0.5">
               <span className="font-medium">{formatPhone(analise.chatid)}</span>
-              <span className="text-muted-foreground/40">•</span>
-              <OrigemBadge origem={origem} />
             </div>
           </div>
         </div>
+      </td>
+      <td className="p-4">
+        <OrigemBadge origem={origem} />
       </td>
       <td className="p-4">
         <div className="flex flex-col">
