@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 import { getOwnerId, getEmpresa, clearOwnerId } from "@/lib/auth";
-import { getAnalises, getKPIs, getGargalos, getTopObjecoes } from "./actions";
+import { getKPIs, getGargalos, getTopObjecoes } from "./actions";
 import { KPICards } from "./_components/KPICards";
 import { MonitorGargalos } from "./_components/MonitorGargalos";
 import { TopObjecoes } from "./_components/TopObjecoes";
-import { TabelaAuditoria } from "./_components/TabelaAuditoria";
 import { AssistenteIA } from "./_components/AssistenteIA";
 import { CentralAlertas } from "./_components/CentralAlertas";
 import { analisarSaudeNegocio } from "./actions-proactive";
@@ -25,8 +24,7 @@ export default async function DashboardPage() {
   }
 
   // Busca dados em paralelo
-  const [analises, kpis, gargalos, objecoes, alerts] = await Promise.all([
-    getAnalises(ownerId),
+  const [kpis, gargalos, objecoes, alerts] = await Promise.all([
     getKPIs(ownerId),
     getGargalos(ownerId),
     getTopObjecoes(ownerId),
@@ -107,13 +105,6 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <MonitorGargalos gargalos={gargalos} totalLeads={kpis.totalLeads} />
             <TopObjecoes objecoes={objecoes} />
-          </div>
-        </SlideUp>
-
-        {/* Tabela de Auditoria */}
-        <SlideUp delay={0.3}>
-          <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-            <TabelaAuditoria analises={analises} />
           </div>
         </SlideUp>
       </div>

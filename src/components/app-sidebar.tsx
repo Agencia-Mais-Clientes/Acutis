@@ -3,21 +3,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useState, createContext, useContext } from "react";
 import {
   LayoutDashboard,
   Settings,
   Activity,
-  Users,
-  BarChart3
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  X,
 } from "lucide-react";
-// We'll need a way to handle logout if it's a server action, typically passed down or imported if possible.
-// For now, I'll assume we can trigger the form submission or redirect. 
-// Ideally logout is in a separate client component or handled via actions.
-// Based on page.tsx, handleLogout is a server action. 
-// I will just place the visual 'Sair' button here and maybe make it a client component that form submits if possible, 
-// or simpler: keep the Logout in the top-right user menu if I add a Header, 
-// OR make this sidebar accept a logout action prop? 
-// Let's stick to a simple client sidebar for navigation first.
+
+interface SidebarContextType {
+  collapsed: boolean;
+  setCollapsed: (value: boolean) => void;
+  mobileOpen: boolean;
+  setMobileOpen: (value: boolean) => void;
+}
+
+const SidebarContext = createContext<SidebarContextType>({
+  collapsed: false,
+  setCollapsed: () => {},
+  mobileOpen: false,
+  setMobileOpen: () => {},
+});
+
+export function useSidebar() {
+  return useContext(SidebarContext);
+}
 
 const routes = [
   {
@@ -37,54 +51,133 @@ const routes = [
   },
 ];
 
-export function AppSidebar() {
-  const pathname = usePathname();
+export function SidebarProvider({ children }: { children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="space-y-4 py-4 flex flex-col h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
-      <div className="px-6 py-4 border-b border-sidebar-border/50">
-        <Link href="/dashboard" className="flex items-center gap-3 cursor-pointer group">
-           <div className="w-10 h-10 bg-gradient-to-br from-[#8537E7] to-[#278BCD] rounded-xl flex items-center justify-center shadow-lg shadow-purple-900/20 group-hover:scale-105 transition-transform duration-300">
+    <SidebarContext.Provider value={{ collapsed, setCollapsed, mobileOpen, setMobileOpen }}>
+      {children}
+    </SidebarContext.Provider>
+  );
+}
+
+export function MobileMenuButton() {
+  const { setMobileOpen } = useSidebar();
+  
+  return (
+    <button
+      onClick={() => setMobileOpen(true)}
+      className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+    >
+      <Menu className="h-5 w-5 text-gray-700" />
+    </button>
+  );
+}
+
+export function AppSidebar() {
+  const pathname = usePathname();
+  const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar();
+
+  return (
+    <>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-[90]"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div 
+        className={cn(
+          "h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col transition-all duration-300 ease-in-out",
+          // Mobile: slide in/out
+          "fixed inset-y-0 left-0 z-[100] md:relative",
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+          // Desktop: collapsed or expanded
+          collapsed ? "md:w-20" : "md:w-72"
+        )}
+      >
+        {/* Header */}
+        <div className="px-4 py-4 border-b border-sidebar-border/50 flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-3 cursor-pointer group">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#8537E7] to-[#278BCD] rounded-xl flex items-center justify-center shadow-lg shadow-purple-900/20 group-hover:scale-105 transition-transform duration-300 flex-shrink-0">
               <Activity className="h-5 w-5 text-white" />
-           </div>
-           <div>
-             <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tight">
-               Acutis
-             </h1>
-             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold ml-0.5">
-               Painel de Gestão
-             </p>
-           </div>
-        </Link>
-      </div>
-      <div className="px-4 py-6 flex-1">
-        <div className="space-y-1.5">
-          {routes.map((route) => (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn(
-                "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer rounded-xl transition-all duration-200 ease-in-out",
-                pathname === route.href || pathname?.startsWith(route.href + "/")
-                  ? "bg-gradient-to-r from-[#8537E7]/10 to-[#278BCD]/10 text-primary shadow-sm" 
-                  : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
-              )}
-            >
-              <div className="flex items-center flex-1">
-                <route.icon className={cn("h-5 w-5 mr-3 transition-colors", 
-                  pathname === route.href || pathname?.startsWith(route.href + "/") 
-                    ? "text-primary" 
-                    : "text-muted-foreground/70 group-hover:text-primary")} 
-                />
-                {route.label}
+            </div>
+            {!collapsed && (
+              <div className="overflow-hidden">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tight">
+                  Acutis
+                </h1>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold ml-0.5">
+                  Painel de Gestão
+                </p>
               </div>
-            </Link>
-          ))}
+            )}
+          </Link>
+          
+          {/* Mobile close button */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <div className="px-3 py-6 flex-1">
+          <div className="space-y-1.5">
+            {routes.map((route) => (
+              <Link
+                key={route.href}
+                href={route.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer rounded-xl transition-all duration-200 ease-in-out",
+                  pathname === route.href || pathname?.startsWith(route.href + "/")
+                    ? "bg-gradient-to-r from-[#8537E7]/10 to-[#278BCD]/10 text-primary shadow-sm" 
+                    : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground",
+                  collapsed && "justify-center"
+                )}
+                title={collapsed ? route.label : undefined}
+              >
+                <div className={cn("flex items-center", collapsed ? "justify-center" : "flex-1")}>
+                  <route.icon 
+                    className={cn(
+                      "h-5 w-5 transition-colors", 
+                      collapsed ? "" : "mr-3",
+                      pathname === route.href || pathname?.startsWith(route.href + "/") 
+                        ? "text-primary" 
+                        : "text-muted-foreground/70 group-hover:text-primary"
+                    )} 
+                  />
+                  {!collapsed && route.label}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Collapse button (desktop only) */}
+        <div className="hidden md:block p-3 border-t border-sidebar-border/50">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="w-full p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <>
+                <ChevronLeft className="h-4 w-4" />
+                <span>Recolher</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
-      <div className="px-3 py-2">
-         {/* Logout placeholder */}
-      </div>
-    </div>
+    </>
   );
 }

@@ -1,4 +1,26 @@
-import { AppSidebar } from "@/components/app-sidebar";
+"use client";
+
+import { AppSidebar, SidebarProvider, MobileMenuButton, useSidebar } from "@/components/app-sidebar";
+import { cn } from "@/lib/utils";
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
+  const { collapsed } = useSidebar();
+  
+  return (
+    <main 
+      className={cn(
+        "h-full bg-background transition-all duration-300",
+        // Mobile: no padding (sidebar overlays)
+        // Desktop: padding based on sidebar state
+        "pl-0 md:pl-72",
+        collapsed && "md:pl-20"
+      )}
+    >
+      <MobileMenuButton />
+      {children}
+    </main>
+  );
+}
 
 export default function DashboardLayout({
   children,
@@ -6,13 +28,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="h-full relative">
-      <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-[80]">
+    <SidebarProvider>
+      <div className="h-full relative flex">
         <AppSidebar />
+        <DashboardContent>{children}</DashboardContent>
       </div>
-      <main className="md:pl-72 h-full bg-background">
-        {children}
-      </main>
-    </div>
+    </SidebarProvider>
   );
 }
