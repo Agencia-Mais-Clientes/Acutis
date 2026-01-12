@@ -9,11 +9,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <main 
       className={cn(
-        "h-full bg-background transition-all duration-300",
-        // Mobile: no padding (sidebar overlays)
-        // Desktop: padding based on sidebar state
-        "pl-0 md:pl-72",
-        collapsed && "md:pl-20"
+        "min-h-screen bg-background transition-all duration-300",
+        // Mobile: no margin (sidebar overlays)
+        // Desktop: margin based on sidebar state
+        "ml-0 md:ml-72",
+        collapsed && "md:ml-20"
       )}
     >
       <MobileMenuButton />
@@ -29,10 +29,11 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="h-full relative flex">
+      <div className="min-h-screen relative">
         <AppSidebar />
         <DashboardContent>{children}</DashboardContent>
       </div>
     </SidebarProvider>
   );
 }
+

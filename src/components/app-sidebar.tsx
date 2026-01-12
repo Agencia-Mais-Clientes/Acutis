@@ -93,11 +93,12 @@ export function AppSidebar() {
       <div 
         className={cn(
           "h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col transition-all duration-300 ease-in-out",
+          // Always fixed position
+          "fixed inset-y-0 left-0 z-[100]",
           // Mobile: slide in/out
-          "fixed inset-y-0 left-0 z-[100] md:relative",
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
           // Desktop: collapsed or expanded
-          collapsed ? "md:w-20" : "md:w-72"
+          collapsed ? "w-20" : "w-72"
         )}
       >
         {/* Header */}
