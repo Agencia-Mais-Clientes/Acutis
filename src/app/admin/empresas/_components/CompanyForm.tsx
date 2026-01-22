@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet } from "lucide-react";
+import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet, Megaphone, Users } from "lucide-react";
 import Link from "next/link";
 
 interface CompanyFormProps {
@@ -28,6 +28,9 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
     instance_token: empresa?.instance_token || "",
     spreadsheet_id: empresa?.spreadsheet_id || "",
     sheet_id: empresa?.sheet_id || "",
+    meta_ads_id: empresa?.meta_ads_id || "",
+    google_ads_id: empresa?.google_ads_id || "",
+    whatsapp_group_id: empresa?.whatsapp_group_id || "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -43,19 +46,22 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
     setLoading(true);
     setError("");
 
+    console.log("[CompanyForm] Salvando empresa com dados:", formData);
     const result = await saveCompany(formData);
+    console.log("[CompanyForm] Resultado do save:", result);
 
     if (result.success) {
+      console.log("[CompanyForm] Sucesso! Mostrando toast e redirecionando...");
       toast.success(isEditing ? "Empresa atualizada com sucesso!" : "Empresa criada com sucesso!");
       router.push("/admin/empresas");
       router.refresh();
     } else {
+      console.log("[CompanyForm] Erro ao salvar:", result.error);
       setError(result.error || "Erro ao salvar empresa");
       toast.error(result.error || "Erro ao salvar empresa");
     }
     setLoading(false);
   }
-
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
@@ -197,6 +203,63 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
                 ID da aba (gid) na planilha. Geralmente é 0 para a primeira aba.
               </p>
             </div>
+          </div>
+
+          {/* Ads */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-gray-100">
+            {/* ID Meta Ads */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <Megaphone className="h-3.5 w-3.5" />
+                ID Meta Ads
+              </label>
+              <Input
+                name="meta_ads_id"
+                value={formData.meta_ads_id}
+                onChange={handleChange}
+                placeholder="act_123456789"
+                className="bg-gray-50 border-gray-200 text-gray-900 font-mono text-sm focus:border-violet-500 focus:ring-violet-500"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                ID da conta de anúncios do Meta (Facebook/Instagram)
+              </p>
+            </div>
+
+            {/* ID Google Ads */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <Megaphone className="h-3.5 w-3.5" />
+                ID Google Ads
+              </label>
+              <Input
+                name="google_ads_id"
+                value={formData.google_ads_id}
+                onChange={handleChange}
+                placeholder="123-456-7890"
+                className="bg-gray-50 border-gray-200 text-gray-900 font-mono text-sm focus:border-violet-500 focus:ring-violet-500"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                ID da conta de anúncios do Google Ads
+              </p>
+            </div>
+          </div>
+
+          {/* Grupo WhatsApp */}
+          <div className="pt-4 border-t border-gray-100">
+            <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+              <Users className="h-3.5 w-3.5" />
+              ID do Grupo WhatsApp
+            </label>
+            <Input
+              name="whatsapp_group_id"
+              value={formData.whatsapp_group_id}
+              onChange={handleChange}
+              placeholder="120363123456789012@g.us"
+              className="bg-gray-50 border-gray-200 text-gray-900 font-mono text-sm focus:border-violet-500 focus:ring-violet-500"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">
+              ID do grupo do WhatsApp para notificações (formato: 120363...@g.us)
+            </p>
           </div>
         </CardContent>
       </Card>

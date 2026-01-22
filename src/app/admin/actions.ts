@@ -20,6 +20,9 @@ export interface Empresa {
   instance_token: string | null; // Token da instância UazAPI
   spreadsheet_id: string | null; // ID da planilha Google Sheets
   sheet_id: string | null; // ID da aba da planilha
+  meta_ads_id: string | null; // ID da conta Meta Ads
+  google_ads_id: string | null; // ID da conta Google Ads
+  whatsapp_group_id: string | null; // ID do grupo do WhatsApp
   ativo: boolean;
   created_at: string;
 }
@@ -219,6 +222,9 @@ export async function saveCompany(empresa: Partial<Empresa>): Promise<{ success:
         instance_token: empresa.instance_token,
         spreadsheet_id: empresa.spreadsheet_id,
         sheet_id: empresa.sheet_id,
+        meta_ads_id: empresa.meta_ads_id,
+        google_ads_id: empresa.google_ads_id,
+        whatsapp_group_id: empresa.whatsapp_group_id,
         ativo: empresa.ativo ?? true,
       })
       .eq("owner", empresa.owner);
@@ -238,6 +244,9 @@ export async function saveCompany(empresa: Partial<Empresa>): Promise<{ success:
       instance_token: empresa.instance_token,
       spreadsheet_id: empresa.spreadsheet_id,
       sheet_id: empresa.sheet_id,
+      meta_ads_id: empresa.meta_ads_id,
+      google_ads_id: empresa.google_ads_id,
+      whatsapp_group_id: empresa.whatsapp_group_id,
       ativo: empresa.ativo ?? true,
     });
 
