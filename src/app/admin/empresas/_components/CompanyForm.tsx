@@ -46,17 +46,13 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
     setLoading(true);
     setError("");
 
-    console.log("[CompanyForm] Salvando empresa com dados:", formData);
     const result = await saveCompany(formData);
-    console.log("[CompanyForm] Resultado do save:", result);
 
     if (result.success) {
-      console.log("[CompanyForm] Sucesso! Mostrando toast e redirecionando...");
       toast.success(isEditing ? "Empresa atualizada com sucesso!" : "Empresa criada com sucesso!");
       router.push("/admin/empresas");
       router.refresh();
     } else {
-      console.log("[CompanyForm] Erro ao salvar:", result.error);
       setError(result.error || "Erro ao salvar empresa");
       toast.error(result.error || "Erro ao salvar empresa");
     }
