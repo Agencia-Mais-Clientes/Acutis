@@ -18,6 +18,8 @@ export interface Empresa {
   objetivo_conversao: string | null;
   instrucoes_ia: string | null;
   instance_token: string | null; // Token da instância UazAPI
+  spreadsheet_id: string | null; // ID da planilha Google Sheets
+  sheet_id: string | null; // ID da aba da planilha
   ativo: boolean;
   created_at: string;
 }
@@ -215,6 +217,8 @@ export async function saveCompany(empresa: Partial<Empresa>): Promise<{ success:
         objetivo_conversao: empresa.objetivo_conversao,
         instrucoes_ia: empresa.instrucoes_ia,
         instance_token: empresa.instance_token,
+        spreadsheet_id: empresa.spreadsheet_id,
+        sheet_id: empresa.sheet_id,
         ativo: empresa.ativo ?? true,
       })
       .eq("owner", empresa.owner);
@@ -232,6 +236,8 @@ export async function saveCompany(empresa: Partial<Empresa>): Promise<{ success:
       objetivo_conversao: empresa.objetivo_conversao,
       instrucoes_ia: empresa.instrucoes_ia,
       instance_token: empresa.instance_token,
+      spreadsheet_id: empresa.spreadsheet_id,
+      sheet_id: empresa.sheet_id,
       ativo: empresa.ativo ?? true,
     });
 

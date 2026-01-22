@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { saveCompany, Empresa } from "../../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet } from "lucide-react";
 import Link from "next/link";
 
 interface CompanyFormProps {
@@ -25,6 +26,8 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
     objetivo_conversao: empresa?.objetivo_conversao || "",
     instrucoes_ia: empresa?.instrucoes_ia || "",
     instance_token: empresa?.instance_token || "",
+    spreadsheet_id: empresa?.spreadsheet_id || "",
+    sheet_id: empresa?.sheet_id || "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -43,13 +46,16 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
     const result = await saveCompany(formData);
 
     if (result.success) {
+      toast.success(isEditing ? "Empresa atualizada com sucesso!" : "Empresa criada com sucesso!");
       router.push("/admin/empresas");
       router.refresh();
     } else {
       setError(result.error || "Erro ao salvar empresa");
+      toast.error(result.error || "Erro ao salvar empresa");
     }
     setLoading(false);
   }
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
@@ -152,6 +158,45 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
             <p className="text-xs text-gray-400 mt-1.5">
               Token gerado pelo UazAPI para verificar status da conexão. Deixe vazio se não usar.
             </p>
+          </div>
+
+          {/* Planilha Google Sheets */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-gray-100">
+            {/* ID da Planilha */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <Sheet className="h-3.5 w-3.5" />
+                ID da Planilha
+              </label>
+              <Input
+                name="spreadsheet_id"
+                value={formData.spreadsheet_id}
+                onChange={handleChange}
+                placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+                className="bg-gray-50 border-gray-200 text-gray-900 font-mono text-sm focus:border-violet-500 focus:ring-violet-500"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                ID da planilha Google Sheets (parte da URL após /d/)
+              </p>
+            </div>
+
+            {/* ID da Aba */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <Sheet className="h-3.5 w-3.5" />
+                ID da Aba
+              </label>
+              <Input
+                name="sheet_id"
+                value={formData.sheet_id}
+                onChange={handleChange}
+                placeholder="0"
+                className="bg-gray-50 border-gray-200 text-gray-900 font-mono text-sm focus:border-violet-500 focus:ring-violet-500"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                ID da aba (gid) na planilha. Geralmente é 0 para a primeira aba.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
