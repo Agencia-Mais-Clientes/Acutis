@@ -5,6 +5,7 @@ import { SyncTokensButton } from "./_components/SyncTokensButton";
 import { Activity, LogOut, Plus, Building2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 
 export default async function AdminEmpresasPage() {
   const session = await getAdminSession();
@@ -22,17 +23,29 @@ export default async function AdminEmpresasPage() {
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-6 h-16 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
-              <Activity className="h-5 w-5 text-white" strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="text-sm font-black text-gray-900 tracking-tight uppercase">
-                Acutis
-              </h1>
-              <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
-                Painel Admin
-              </span>
+          <div className="flex items-center gap-4">
+            {/* Logo Mais Clientes */}
+            <Image
+              src="/logos/simbolo-mais-clientes.png"
+              alt="Mais Clientes"
+              width={36}
+              height={36}
+              className="rounded-lg"
+            />
+            <div className="h-8 w-px bg-gray-200" />
+            {/* Logo Acutis */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+                <Activity className="h-5 w-5 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h1 className="text-sm font-black text-gray-900 tracking-tight uppercase">
+                  Acutis
+                </h1>
+                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
+                  Painel Admin
+                </span>
+              </div>
             </div>
           </div>
 

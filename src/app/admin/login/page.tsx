@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { adminLogin } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Activity, LogIn, AlertCircle } from "lucide-react";
+import { Activity, LogIn, AlertCircle, Shield, Sparkles } from "lucide-react";
+import Image from "next/image";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -30,30 +31,58 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-700 rounded-xl flex items-center justify-center shadow-lg shadow-green-900/30">
-            <Activity className="h-6 w-6 text-white" strokeWidth={2.5} />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-white tracking-tight uppercase">
-              Acutis
-            </h1>
-            <p className="text-xs text-gray-500 font-medium">Painel Administrativo</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-violet-500/10 to-cyan-500/10 rounded-full blur-3xl" />
+        
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]" />
+      </div>
 
-        {/* Card de Login */}
-        <div className="bg-[#0b0d11] border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-bold text-white mb-6 text-center">
-            Acesso Restrito
-          </h2>
+      {/* Logo Mais Clientes no topo */}
+      <div className="relative z-10 mb-8 animate-fade-in">
+        <Image
+          src="/logos/logo-mais-clientes.png"
+          alt="Mais Clientes"
+          width={200}
+          height={60}
+          className="drop-shadow-2xl"
+          priority
+        />
+      </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="w-full max-w-md relative z-10">
+        {/* Card de Login com glassmorphism */}
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+          {/* Acutis Badge */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30 ring-2 ring-white/20">
+              <Activity className="h-6 w-6 text-white" strokeWidth={2.5} />
+            </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5 uppercase font-bold">
+              <h1 className="text-xl font-black text-white tracking-tight uppercase">
+                Acutis
+              </h1>
+              <p className="text-[10px] text-white/60 font-medium uppercase tracking-widest">
+                Painel Administrativo
+              </p>
+            </div>
+          </div>
+
+          {/* Título */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <Shield className="h-4 w-4 text-violet-400" />
+            <h2 className="text-sm font-bold text-white/80 uppercase tracking-wide">
+              Acesso Restrito
+            </h2>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-xs text-white/60 mb-2 uppercase font-bold tracking-wide">
                 Email
               </label>
               <Input
@@ -61,13 +90,13 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@empresa.com"
-                className="bg-[#161b22] border-gray-700 text-white"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-violet-400 focus:ring-violet-400/50 backdrop-blur-sm"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5 uppercase font-bold">
+              <label className="block text-xs text-white/60 mb-2 uppercase font-bold tracking-wide">
                 Senha
               </label>
               <Input
@@ -75,25 +104,31 @@ export default function AdminLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="bg-[#161b22] border-gray-700 text-white"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-violet-400 focus:ring-violet-400/50 backdrop-blur-sm"
                 required
               />
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                <AlertCircle className="h-4 w-4" />
-                {error}
+              <div className="flex items-center gap-2 text-red-300 text-sm bg-red-500/20 border border-red-500/30 rounded-xl p-3 backdrop-blur-sm">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold"
+              className="w-full bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-500 hover:from-violet-600 hover:via-purple-600 hover:to-cyan-600 text-white font-bold shadow-lg shadow-violet-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-violet-500/40"
             >
               {loading ? (
-                "Entrando..."
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Entrando...
+                </span>
               ) : (
                 <>
                   <LogIn className="mr-2 h-4 w-4" />
@@ -104,9 +139,23 @@ export default function AdminLoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-600 mt-6">
-          Acesso restrito a administradores
-        </p>
+        {/* Footer - Powered by Mais Clientes */}
+        <div className="flex items-center justify-center gap-2 mt-8 opacity-60 hover:opacity-100 transition-opacity">
+          <Sparkles className="h-3 w-3 text-violet-400" />
+          <span className="text-xs text-white/60 font-medium">
+            Powered by
+          </span>
+          <Image
+            src="/logos/simbolo-mais-clientes.png"
+            alt="Mais Clientes"
+            width={20}
+            height={20}
+            className="opacity-80"
+          />
+          <span className="text-xs font-bold bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
+            Mais Clientes
+          </span>
+        </div>
       </div>
     </div>
   );

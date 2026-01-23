@@ -92,7 +92,7 @@ export function AppSidebar() {
       {/* Sidebar */}
       <div 
         className={cn(
-          "h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col transition-all duration-300 ease-in-out",
+          "h-screen bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col transition-all duration-300 ease-in-out",
           // Always fixed position
           "fixed inset-y-0 left-0 z-[100]",
           // Mobile: slide in/out
@@ -102,9 +102,9 @@ export function AppSidebar() {
         )}
       >
         {/* Header */}
-        <div className="px-4 py-4 border-b border-sidebar-border/50 flex items-center justify-between">
+        <div className="px-4 py-4 border-b border-sidebar-border/50 flex items-center justify-between shrink-0">
           <Link href="/dashboard" className="flex items-center gap-3 cursor-pointer group">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#8537E7] to-[#278BCD] rounded-xl flex items-center justify-center shadow-lg shadow-purple-900/20 group-hover:scale-105 transition-transform duration-300 flex-shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#8537E7] to-[#278BCD] rounded-xl flex items-center justify-center shadow-lg shadow-purple-900/20 group-hover:scale-105 transition-transform duration-300 shrink-0">
               <Activity className="h-5 w-5 text-white" />
             </div>
             {!collapsed && (
@@ -163,16 +163,16 @@ export function AppSidebar() {
         </div>
 
         {/* Collapse button (desktop only) */}
-        <div className="hidden md:block p-3 border-t border-sidebar-border/50">
+        <div className="hidden md:block p-3 border-t border-sidebar-border/50 shrink-0 mt-auto">
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="w-full p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            className="w-full p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 font-medium"
           >
             {collapsed ? (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5" />
             ) : (
               <>
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-5 w-5" />
                 <span>Recolher</span>
               </>
             )}

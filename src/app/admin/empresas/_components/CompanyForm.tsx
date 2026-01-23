@@ -60,7 +60,7 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto pb-24">
       {/* Dados da Empresa */}
       <Card className="bg-white border border-gray-100 shadow-lg rounded-2xl overflow-hidden">
         <CardHeader className="bg-gray-50 border-b border-gray-100 px-6 py-4">
@@ -279,7 +279,7 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
               value={formData.instrucoes_ia}
               onChange={handleChange}
               placeholder={`Ex: "Esta é uma clínica de estética. Foque sempre em agendar avaliação gratuita. Se o cliente perguntar preço, não fale, peça para agendar. Seja rigoroso com o script de vendas."`}
-              className="bg-gray-50 border-gray-200 text-gray-900 min-h-[150px] focus:border-violet-500 focus:ring-violet-500"
+              className="bg-gray-50 border-gray-200 text-gray-900 min-h-[120px] focus:border-violet-500 focus:ring-violet-500"
             />
             <p className="text-xs text-gray-400 mt-2">
                Essas instruções serão injetadas no prompt da IA ao analisar as conversas desta empresa.
@@ -296,22 +296,26 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
         </div>
       )}
 
-      {/* Botões */}
-      <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-        <Link href="/admin/empresas" className="w-full sm:w-auto">
-          <Button type="button" variant="outline" className="w-full sm:w-auto text-gray-600">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar
-          </Button>
-        </Link>
-        <Button 
-          type="submit" 
-          disabled={loading} 
-          className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/20"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {loading ? "Salvando..." : isEditing ? "Atualizar" : "Criar Empresa"}
-        </Button>
+      {/* Sticky Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-lg z-40">
+        <div className="container mx-auto px-4 sm:px-6 py-4 max-w-4xl">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
+            <Link href="/admin/empresas" className="w-full sm:w-auto">
+              <Button type="button" variant="outline" className="w-full sm:w-auto text-gray-600">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar
+              </Button>
+            </Link>
+            <Button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/20"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {loading ? "Salvando..." : isEditing ? "Atualizar" : "Criar Empresa"}
+            </Button>
+          </div>
+        </div>
       </div>
     </form>
   );
