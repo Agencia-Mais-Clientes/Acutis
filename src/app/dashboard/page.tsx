@@ -1,40 +1,75 @@
 import { redirect } from "next/navigation";
-import { getOwnerId, getEmpresa, clearOwnerId } from "@/lib/auth";
+import { getOwnerId, getEmpresa, clearOwnerId, isAdminSession, isAdminViewing, setOwnerIdAsAdmin } from "@/lib/auth";
 import { getKPIs, getGargalos, getTopObjecoes } from "./actions";
 import { KPICards } from "./_components/KPICards";
 import { MonitorGargalos } from "./_components/MonitorGargalos";
 import { TopObjecoes } from "./_components/TopObjecoes";
 import { AssistenteIA } from "./_components/AssistenteIA";
 import { CentralAlertas } from "./_components/CentralAlertas";
+import { CompanySelector } from "./_components/CompanySelector";
 import { analisarSaudeNegocio } from "./actions-proactive";
+import { getCompanies } from "@/app/admin/actions";
 import { LogOut, Sparkles, AlertTriangle } from "lucide-react";
 import { FadeIn, SlideUp } from "@/components/ui/motion";
 
 export default async function DashboardPage() {
   const ownerId = await getOwnerId();
+  const isAdmin = await isAdminSession();
+  const adminViewing = await isAdminViewing();
 
-  if (!ownerId) {
+  // Se não tem owner e não é admin, redireciona para login
+  if (!ownerId && !isAdmin) {
     redirect("/login");
   }
 
-  const empresa = await getEmpresa(ownerId);
+  // Se é admin sem owner selecionado, busca a primeira empresa ativa
+  let effectiveOwnerId = ownerId;
+  if (!ownerId && isAdmin) {
+    const empresas = await getCompanies();
+    const empresaAtiva = empresas.find(e => e.ativo);
+    if (empresaAtiva) {
+      await setOwnerIdAsAdmin(empresaAtiva.owner);
+      effectiveOwnerId = empresaAtiva.owner;
+    } else {
+      redirect("/admin/empresas");
+    }
+  }
+
+  if (!effectiveOwnerId) {
+    redirect("/login");
+  }
+
+  const empresa = await getEmpresa(effectiveOwnerId);
 
   if (!empresa) {
     redirect("/login");
   }
 
+  // Busca lista de empresas se for admin
+  const empresas = isAdmin ? await getCompanies() : [];
+
   // Busca dados em paralelo
   const [kpis, gargalos, objecoes, alerts] = await Promise.all([
-    getKPIs(ownerId),
-    getGargalos(ownerId),
-    getTopObjecoes(ownerId),
-    analisarSaudeNegocio(ownerId),
+    getKPIs(effectiveOwnerId),
+    getGargalos(effectiveOwnerId),
+    getTopObjecoes(effectiveOwnerId),
+    analisarSaudeNegocio(effectiveOwnerId),
   ]);
 
   async function handleLogout() {
     "use server";
     await clearOwnerId();
+    // Se era admin, redireciona para login admin
+    const wasAdmin = await isAdminSession();
+    if (wasAdmin) {
+      redirect("/admin/empresas");
+    }
     redirect("/login");
+  }
+
+  async function handleSelectCompany(owner: string) {
+    "use server";
+    return await setOwnerIdAsAdmin(owner);
   }
 
   return (
@@ -57,10 +92,19 @@ export default async function DashboardPage() {
                  Olá, {empresa.nome_empresa}! 👋
                </h1>
                <p className="text-white/70 text-sm mt-1">
-                 Aqui está o resumo do seu desempenho
+                 {adminViewing ? "Visualizando como admin" : "Aqui está o resumo do seu desempenho"}
                </p>
              </div>
-             <div className="flex items-center gap-3">
+             <div className="flex flex-wrap items-center gap-3">
+                {/* Admin Company Selector */}
+                {isAdmin && (
+                  <CompanySelector 
+                    empresas={empresas.map(e => ({ owner: e.owner, nome_empresa: e.nome_empresa, ativo: e.ativo }))}
+                    empresaAtual={{ owner: empresa.owner, nome_empresa: empresa.nome_empresa, ativo: empresa.ativo ?? true }}
+                    onSelect={handleSelectCompany}
+                  />
+                )}
+                
                 {/* Alert indicator in header */}
                 {alerts.length > 0 && (
                   <div className="flex items-center gap-2 px-4 py-2 bg-red-500/20 backdrop-blur-sm border border-red-400/30 rounded-lg animate-pulse">
@@ -110,7 +154,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Assistente IA */}
-      <AssistenteIA ownerId={ownerId} nomeEmpresa={empresa.nome_empresa} />
+      <AssistenteIA ownerId={effectiveOwnerId} nomeEmpresa={empresa.nome_empresa} />
     </div>
   );
 }
