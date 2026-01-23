@@ -513,36 +513,96 @@ ${transcription.transcricao}
    - **Meta (Facebook/Instagram Ads)**: Cliente menciona "anúncio", "propaganda", "vi no Instagram", "vi no Facebook", "apareceu pra mim", "vi na rede social", "vi no feed". QUALQUER menção a anúncio = **Meta**.
    - **Google (Google Ads)**: Cliente menciona "pesquisei no Google", "achei no Google", "vi no Google".
    - **Indicação**: Cliente menciona "indicação", "minha amiga falou", "fulano recomendou".
-   - **Orgânico**: SOMENTE se não houver NENHUMA pista das anteriores. Se o cliente menciona "anúncio" ou "propaganda" em qualquer contexto, NÃO é orgânico.
+   - **Orgânico**: SOMENTE se não houver NENHUMA pista das anteriores.
    - **REGRA CRÍTICA**: Se houver QUALQUER menção a "anúncio", "propaganda", "vi" + rede social = origem é **Meta** ou **Google**, NUNCA Orgânico.
 
-4. **ANÁLISE QUALITATIVA (APENAS PARA VENDAS):**
-   - **Objeções:** Liste barreiras reais (Preço, Horário, Local, Decisor).
-   - **Ação Sugerida:** O que o atendente deve fazer a seguir?
+# ═══════════════════════════════════════════════════════════
+# PILARES DE QUALIDADE (OBRIGATÓRIO PARA VENDAS)
+# ═══════════════════════════════════════════════════════════
+
+Avalie CADA pilar separadamente com nota 0-100:
+
+**1. RAPPORT/CONEXÃO (Peso 20%):**
+   - Usou nome do cliente?
+   - Criou conexão pessoal (perguntou algo da vida, elogiou)?
+   - Tom amigável e acolhedor vs robótico e automático?
+   - Demonstrou empatia?
+
+**2. PERSONALIZAÇÃO (Peso 30%):**
+   - Entendeu a necessidade específica do cliente?
+   - Ofereceu solução adequada ao perfil dele?
+   - Fez perguntas de qualificação antes de ofertar?
+   - Adaptou o discurso ao contexto do cliente?
+
+**3. CONDUÇÃO DE FECHAMENTO (Peso 30%):**
+   - Apresentou CTA (call-to-action) claro?
+   - Usou técnicas de fechamento (assumir a venda, alternativas)?
+   - Criou senso de urgência ou escassez?
+   - Direcionou para o próximo passo concreto?
+
+**4. TRATAMENTO DE OBJEÇÕES (Peso 20%):**
+   - Respondeu objeções de forma eficaz?
+   - Ofereceu alternativas (parcelamento, outro plano)?
+   - Contornou a objeção ou aceitou passivamente?
+   - Usou técnicas como espelhamento ou reformulação?
+
+Para CADA pilar, forneça:
+- **nota**: 0-100 (seja justo mas crítico)
+- **feedback**: O que você observou de concreto (cite trechos se possível)
+- **sugestao**: O que deveria ter feito diferente (seja específico e educativo)
+
+# ═══════════════════════════════════════════════════════════
+# ANÁLISE QUALITATIVA DETALHADA (VENDAS)
+# ═══════════════════════════════════════════════════════════
+
+Analise a QUALIDADE da comunicação, não apenas o resultado:
+
+## Linguagem e Tom
+- O atendente usou linguagem profissional? Informal demais? Formal demais?
+- Houve erros de português que podem ter prejudicado credibilidade?
+- O tom foi adequado ao perfil do cliente?
+- Avalie: "Excelente" | "Boa" | "Regular" | "Ruim"
+
+## Gatilhos Mentais
+- Quais gatilhos foram APLICADOS? (escassez, prova_social, autoridade, urgencia, reciprocidade)
+- Quais gatilhos FALTARAM e poderiam ter sido usados?
+
+## Erros Críticos
+Liste os erros graves cometidos:
+- Aceitou objeção passivamente sem tentar contornar?
+- Deixou cliente sem resposta por muito tempo?
+- Perdeu oportunidade clara de fechamento?
+- Falou mais do que ouviu?
+- Deu preço direto sem gerar valor primeiro?
+- Não criou urgência nenhuma?
+
+## Diagnóstico Final
+- POR QUE a venda não aconteceu (se não aconteceu)?
+- Em qual momento específico a venda "morreu"?
+- O que foi o fator decisivo para o resultado?
+
+# ═══════════════════════════════════════════════════════════
+# REGRAS ESPECIAIS
+# ═══════════════════════════════════════════════════════════
 
 5. **REGRA CRÍTICA DE FEEDBACK (VENDAS):**
-   - **pontos_fortes**: SOMENTE preenche se funil_fase = "Vendido" ou "Agendado" (houve conversão real).
+   - **pontos_fortes**: SOMENTE preenche se funil_fase = "Vendido" ou "Agendado".
    - Se "Em Negociação" ou "Perdido": pontos_fortes = [] (array vazio). Foco total nos erros.
-   - **pontos_melhoria**: SEMPRE liste os pontos fracos, erros e o que precisa melhorar. Seja direto e crítico.
-   - O objetivo é bater onde a pessoa errou. Só elogiamos quando teve resultado concreto.
+   - **pontos_melhoria**: SEMPRE liste os pontos fracos. Seja direto e crítico.
 
 6. **REGRA PARA SUPORTE:**
    - Se tipo_conversacao = "Suporte": análise SIMPLIFICADA.
    - Suporte não é foco de vendas, então:
-     - temperatura: "N/A"
-     - objecoes_detectadas: [] ou apenas o problema relatado
-     - performance_vendas: { "pontos_fortes": [], "pontos_melhoria": [] }
+     - temperatura: "Frio"
+     - pilares_atendimento: todos com nota 0 e feedback "N/A - Suporte"
+     - analise_qualitativa: preencher apenas linguagem
      - nota_atendimento_0_100: 0 (não avaliar)
-   - Apenas preencha resumo_executivo com descrição breve do atendimento.
+   - Apenas preencha resumo_executivo com descrição breve.
 
-7. **EXTRAÇÃO DE DADOS DE CONVERSÃO (IMPORTANTE):**
-   - Se funil_fase = "Agendado": extraia a DATA/HORA do agendamento mencionada na conversa.
-   - Se funil_fase = "Vendido": extraia TODOS os detalhes da venda mencionados:
-     - **plano**: Qual plano fechou (anual, mensal, trimestral, etc.)
-     - **valor**: Valor em R$ mencionado
-     - **forma_pagamento**: Cartão, PIX, boleto, dinheiro, etc.
-     - **tempo_contrato**: Período do plano (12 meses, 6 meses, etc.)
-   - Se NÃO mencionaram esses dados na conversa, deixe como null.
+7. **EXTRAÇÃO DE DADOS DE CONVERSÃO:**
+   - Se funil_fase = "Agendado": extraia DATA/HORA do agendamento.
+   - Se funil_fase = "Vendido": extraia plano, valor, forma_pagamento, tempo_contrato.
+   - Se NÃO mencionaram, deixe como null.
 
 # OUTPUT JSON
 Responda APENAS com JSON válido, sem formatação markdown:
@@ -553,28 +613,62 @@ Responda APENAS com JSON válido, sem formatação markdown:
     "nome_vendedor": "string/null",
     "origem_detectada": "Meta" | "Google" | "Indicação" | "Orgânico"
   },
-  "temperatura": "Quente" | "Morno" | "Frio" | "N/A",
+  "temperatura": "Quente" | "Morno" | "Frio",
   "objecoes_detectadas": ["string"],
   "proximo_passo_sugerido": "string",
   "resumo_executivo": "string",
   "funil_fase": "Status conforme regra acima",
   "conversao_realizada": boolean,
   "detalhes_conversao": "string/null",
+  "pilares_atendimento": {
+    "rapport_conexao": {
+      "nota": 0-100,
+      "feedback": "O que observou - seja específico",
+      "sugestao": "O que deveria ter feito - seja educativo"
+    },
+    "personalizacao": {
+      "nota": 0-100,
+      "feedback": "...",
+      "sugestao": "..."
+    },
+    "conducao_fechamento": {
+      "nota": 0-100,
+      "feedback": "...",
+      "sugestao": "..."
+    },
+    "tratamento_objecoes": {
+      "nota": 0-100,
+      "feedback": "...",
+      "sugestao": "..."
+    },
+    "nota_geral": "Média ponderada: (rapport*0.2 + person*0.3 + conducao*0.3 + objecoes*0.2)"
+  },
+  "analise_qualitativa": {
+    "linguagem": {
+      "avaliacao": "Excelente" | "Boa" | "Regular" | "Ruim",
+      "observacoes": "Comentário sobre a linguagem usada"
+    },
+    "gatilhos_aplicados": ["escassez", "prova_social", etc.],
+    "gatilhos_faltantes": ["urgencia", "autoridade", etc.],
+    "erros_criticos": ["Erro 1", "Erro 2", etc.],
+    "momento_perda": "Em qual momento a venda morreu (se perdido/negociação)",
+    "diagnostico_final": "Resumo: por que aconteceu o resultado que aconteceu"
+  },
   "dados_agendamento": {
-    "data_agendada": "string/null (ex: '10/01/2026 às 14h')",
-    "tipo_agendamento": "string/null (ex: 'Aula experimental', 'Visita', 'Reunião')"
+    "data_agendada": "string/null",
+    "tipo_agendamento": "string/null"
   },
   "dados_venda": {
-    "plano": "string/null (ex: 'Anual recorrente', 'Mensal')",
-    "valor": "number/null (valor numérico em reais)",
-    "forma_pagamento": "string/null (ex: 'Cartão crédito', 'PIX', 'Boleto')",
-    "tempo_contrato": "string/null (ex: '12 meses', '6 meses')"
+    "plano": "string/null",
+    "valor": number/null,
+    "forma_pagamento": "string/null",
+    "tempo_contrato": "string/null"
   },
   "performance_vendas": {
-    "pontos_fortes": ["Só se Vendido/Agendado, senão []"],
-    "pontos_melhoria": ["Sempre liste os erros - seja crítico e direto"]
+    "pontos_fortes": ["Só se Vendido/Agendado"],
+    "pontos_melhoria": ["Sempre liste os erros"]
   },
-  "nota_atendimento_0_100": 0
+  "nota_atendimento_0_100": "Igual a nota_geral dos pilares"
 }`;
 
   // Usa retry com backoff para lidar com rate limits

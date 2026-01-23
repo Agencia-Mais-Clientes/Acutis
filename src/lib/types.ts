@@ -10,6 +10,46 @@ export interface PerformanceVendas {
   pontos_melhoria: string[];
 }
 
+// ============================================
+// PILARES DE QUALIDADE (NOVO)
+// ============================================
+
+/** Pilar individual de avaliação de atendimento */
+export interface PilarAtendimento {
+  nota: number;        // 0-100
+  feedback: string;    // O que foi observado
+  sugestao: string;    // O que fazer diferente
+}
+
+/** 4 Pilares de qualidade do atendimento */
+export interface PilaresAtendimento {
+  rapport_conexao: PilarAtendimento;
+  personalizacao: PilarAtendimento;
+  conducao_fechamento: PilarAtendimento;
+  tratamento_objecoes: PilarAtendimento;
+  nota_geral: number;  // Média ponderada dos 4 pilares
+}
+
+// ============================================
+// ANÁLISE QUALITATIVA (NOVO)
+// ============================================
+
+/** Avaliação da qualidade da linguagem */
+export interface AvaliacaoLinguagem {
+  avaliacao: "Excelente" | "Boa" | "Regular" | "Ruim";
+  observacoes: string;
+}
+
+/** Análise qualitativa detalhada da conversa */
+export interface AnaliseQualitativa {
+  linguagem: AvaliacaoLinguagem;
+  gatilhos_aplicados: string[];    // ["escassez", "prova_social", "autoridade"]
+  gatilhos_faltantes: string[];    // ["urgência", "reciprocidade"]
+  erros_criticos: string[];        // Lista de erros graves cometidos
+  momento_perda?: string;          // "Quando cliente perguntou preço e não teve resposta rápida"
+  diagnostico_final: string;       // Resumo do que causou sucesso ou fracasso
+}
+
 export interface Metrics {
   tempo_primeira_resposta_texto: string;
   tempo_medio_resposta_texto: string;
@@ -30,6 +70,13 @@ export interface ResultadoIA {
   dados_cadastrais: DadosCadastrais;
   performance_vendas: PerformanceVendas;
   metrics: Metrics;
+  
+  // Pilares de Qualidade (NOVO - opcional para retrocompatibilidade)
+  pilares_atendimento?: PilaresAtendimento;
+  
+  // Análise Qualitativa (NOVO - opcional para retrocompatibilidade)
+  analise_qualitativa?: AnaliseQualitativa;
+  
   // Dados de conversão extraídos
   dados_agendamento?: {
     data_agendada: string | null;

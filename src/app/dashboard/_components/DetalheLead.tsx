@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Clock, User, Lightbulb, Zap, MessageSquare, AlertTriangle, Sparkles } from "lucide-react";
+import { PilaresCard } from "./PilaresCard";
 
 interface DetalheLeadProps {
   analise: AnaliseConversa;
@@ -116,6 +117,14 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
                 </p>
               </div>
             </div>
+          )}
+
+          {/* Pilares de Qualidade (NOVO) */}
+          {resultado?.pilares_atendimento && (
+            <PilaresCard 
+              pilares={resultado.pilares_atendimento} 
+              analiseQualitativa={resultado.analise_qualitativa}
+            />
           )}
 
           {/* Objeções */}

@@ -11,6 +11,81 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet, Megaphone, Users } from "lucide-react";
 import Link from "next/link";
 
+// Templates pré-definidos de instruções por nicho
+const TEMPLATES = {
+  academia: `# FOCO DE ANÁLISE - ACADEMIA
+
+## Critérios de Avaliação Rigorosos
+- Vendedor DEVE perguntar o objetivo do treino (emagrecimento, hipertrofia, qualidade de vida)
+- Vendedor DEVE oferecer aula experimental antes de falar preço
+- Se cliente perguntar preço, vendedor deve gerar valor ANTES de revelar valores
+- Vendedor DEVE apresentar pelo menos 2 opções de plano
+
+## Objeções Importantes
+- "Não tenho tempo" - CRÍTICO, sempre sinalizar se não tratada
+- "É caro" - Deve oferecer parcelamento ou planos alternativos
+- "Vou pensar" - Deve criar urgência (vagas limitadas, promoção)
+
+## Sinais de Lead Quente
+- Menciona que já treinou antes
+- Pergunta sobre horários específicos
+- Menciona evento próximo (casamento, viagem)`,
+
+  clinica: `# FOCO DE ANÁLISE - CLÍNICA DE ESTÉTICA
+
+## Critérios de Avaliação
+- SEMPRE agendar avaliação gratuita antes de falar preço
+- Nunca dar valores por WhatsApp - objetivo é trazer para a clínica
+- Perguntar qual procedimento tem interesse e o que espera resolver
+- Usar técnica de escassez (poucas vagas, agenda lotada)
+
+## Objeções Importantes
+- Preço - NUNCA revelar, apenas na avaliação
+- "Preciso consultar alguém" - Oferecer avaliação para a pessoa também
+- "Vou pesquisar" - Destacar diferenciais e garantia de resultado
+
+## Cliente Quente
+- Menciona evento próximo
+- Já fez procedimentos antes
+- Indica urgência no problema`,
+
+  imobiliaria: `# FOCO DE ANÁLISE - IMOBILIÁRIA
+
+## Critérios de Avaliação
+- Qualificar o lead: tipo de imóvel, região, faixa de valor, prazo
+- Agendar visita presencial como objetivo principal
+- Apresentar opções compatíveis com o perfil
+- Entender situação atual (aluguel, casa própria, financiamento)
+
+## Objeções Importantes
+- "Está caro" - Apresentar opções na faixa, falar de valorização
+- "Só estou pesquisando" - Entender prazo real e manter contato
+- Financiamento - Encaminhar para simulação gratuita
+
+## Lead Quente
+- Tem urgência definida (casamento, mudança de cidade)
+- Já tem entrada/FGTS
+- Sabe exatamente o que quer`,
+
+  odonto: `# FOCO DE ANÁLISE - CLÍNICA ODONTOLÓGICA
+
+## Critérios de Avaliação
+- Entender a queixa/dor principal do paciente
+- Agendar avaliação como objetivo principal
+- Destacar tecnologia e estrutura da clínica
+- Mencionar formas de pagamento flexíveis
+
+## Objeções Importantes
+- Medo de dentista - Tranquilizar, falar de sedação e ambiente acolhedor
+- Preço - Só na avaliação, parcelamento disponível
+- "Não tenho tempo" - Horários flexíveis, urgência do tratamento
+
+## Paciente Quente
+- Dor ou desconforto atual
+- Indicação de amigo/familiar
+- Evento próximo (casamento, entrevista)`
+};
+
 interface CompanyFormProps {
   empresa?: Empresa | null;
 }
@@ -268,22 +343,77 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
             Instruções Personalizadas para IA
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-6 space-y-4">
+          {/* Templates Pré-definidos */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-2 uppercase font-bold">
+              📋 Templates por Nicho (clique para aplicar)
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                onClick={() => setFormData(prev => ({ ...prev, instrucoes_ia: TEMPLATES.academia }))}
+              >
+                💪 Academia
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs bg-pink-50 border-pink-200 text-pink-700 hover:bg-pink-100"
+                onClick={() => setFormData(prev => ({ ...prev, instrucoes_ia: TEMPLATES.clinica }))}
+              >
+                💆 Clínica Estética
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                onClick={() => setFormData(prev => ({ ...prev, instrucoes_ia: TEMPLATES.imobiliaria }))}
+              >
+                🏠 Imobiliária
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                onClick={() => setFormData(prev => ({ ...prev, instrucoes_ia: TEMPLATES.odonto }))}
+              >
+                🦷 Odontologia
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-xs text-gray-500 hover:text-red-600"
+                onClick={() => setFormData(prev => ({ ...prev, instrucoes_ia: "" }))}
+              >
+                🗑️ Limpar
+              </Button>
+            </div>
+          </div>
+
+          {/* Textarea */}
           <div className="space-y-2">
             <label htmlFor="instrucoes_ia" className="text-sm font-medium text-gray-700">
-              Instruções Customizadas da IA
+              Instruções Customizadas
             </label>
             <Textarea
               id="instrucoes_ia"
               name="instrucoes_ia"
               value={formData.instrucoes_ia}
               onChange={handleChange}
-              placeholder={`Ex: "Esta é uma clínica de estética. Foque sempre em agendar avaliação gratuita. Se o cliente perguntar preço, não fale, peça para agendar. Seja rigoroso com o script de vendas."`}
-              className="bg-gray-50 border-gray-200 text-gray-900 min-h-[120px] focus:border-violet-500 focus:ring-violet-500"
+              placeholder="Escreva instruções específicas para a IA analisar as conversas desta empresa..."
+              className="bg-gray-50 border-gray-200 text-gray-900 min-h-[180px] focus:border-violet-500 focus:ring-violet-500 font-mono text-sm"
             />
-            <p className="text-xs text-gray-400 mt-2">
-               Essas instruções serão injetadas no prompt da IA ao analisar as conversas desta empresa.
-               Deixe em branco para usar o comportamento padrão.
+            <p className="text-xs text-gray-400">
+              💡 Estas instruções são injetadas no prompt da IA. Use para definir critérios específicos de avaliação,
+              scripts de venda esperados, objeções importantes no seu nicho, etc.
             </p>
           </div>
         </CardContent>
