@@ -56,10 +56,42 @@ export interface TranscricaoFormatada {
   data_entrada_lead: string;  // Data/hora da primeira mensagem do lead
   data_ultima_mensagem: string; // Data/hora da última mensagem
   metrics: {
-    tempo_primeira_resposta_texto: string;
-    tempo_medio_resposta_texto: string;
+    tempo_primeira_resposta_texto: string;   // Tempo bruto (cronológico)
+    tempo_medio_resposta_texto: string;       // Média bruta
+    // Métricas de tempo justo (considerando horário comercial)
+    tempo_primeira_resposta_justo?: string;   // Tempo descontando fora do expediente
+    tempo_medio_resposta_justo?: string;      // Média descontando fora do expediente
+    primeira_msg_fora_expediente?: boolean;   // Se a primeira msg do cliente foi fora do horário
   };
 }
+
+// ============================================
+// Tipos para Horário de Funcionamento
+// ============================================
+
+// Configuração de horário por dia
+export interface HorarioDia {
+  inicio: string | null;  // "08:00" formato HH:mm
+  fim: string | null;     // "18:00" formato HH:mm
+  ativo: boolean;         // Se a empresa abre nesse dia
+}
+
+// Dias da semana em português (keys do JSONB)
+export type DiaSemana = "segunda" | "terca" | "quarta" | "quinta" | "sexta" | "sabado" | "domingo";
+
+// Configuração completa da semana
+export type HorarioFuncionamento = Record<DiaSemana, HorarioDia>;
+
+// Default para empresas que ainda não configuraram
+export const HORARIO_FUNCIONAMENTO_DEFAULT: HorarioFuncionamento = {
+  segunda: { inicio: "08:00", fim: "18:00", ativo: true },
+  terca: { inicio: "08:00", fim: "18:00", ativo: true },
+  quarta: { inicio: "08:00", fim: "18:00", ativo: true },
+  quinta: { inicio: "08:00", fim: "18:00", ativo: true },
+  sexta: { inicio: "08:00", fim: "18:00", ativo: true },
+  sabado: { inicio: "08:00", fim: "12:00", ativo: true },
+  domingo: { inicio: null, fim: null, ativo: false },
+};
 
 // ============================================
 // Tipos para Configuração de Empresa
@@ -75,6 +107,8 @@ export interface ConfigEmpresa {
   ativo?: boolean;
   instrucoes_ia?: string;              // Instruções personalizadas para a IA
   analise_origem_filter?: OrigemFilter; // Filtro de origem para análise (default: trafego_pago)
+  horario_funcionamento?: HorarioFuncionamento; // Horário de funcionamento por dia
+  timezone?: string;                   // Timezone da empresa (default: America/Sao_Paulo)
 }
 
 // ============================================

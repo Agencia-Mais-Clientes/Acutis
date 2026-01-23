@@ -10,6 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet, Megaphone, Users } from "lucide-react";
 import Link from "next/link";
+import { BusinessHoursEditor } from "./BusinessHoursEditor";
+import type { HorarioFuncionamento } from "@/lib/analyze-types";
+import { HORARIO_FUNCIONAMENTO_DEFAULT } from "@/lib/analyze-types";
 
 // Templates pré-definidos de instruções por nicho
 const TEMPLATES = {
@@ -108,6 +111,12 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
     whatsapp_group_id: empresa?.whatsapp_group_id || "",
   });
 
+  // Estado para horário de funcionamento (separado para facilitar tipagem)
+  const [horarioFuncionamento, setHorarioFuncionamento] = useState<HorarioFuncionamento>(
+    (empresa?.horario_funcionamento as HorarioFuncionamento) || HORARIO_FUNCIONAMENTO_DEFAULT
+  );
+  const [timezone, setTimezone] = useState(empresa?.timezone || "America/Sao_Paulo");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -121,7 +130,11 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
     setLoading(true);
     setError("");
 
-    const result = await saveCompany(formData);
+    const result = await saveCompany({
+      ...formData,
+      horario_funcionamento: horarioFuncionamento,
+      timezone,
+    });
 
     if (result.success) {
       toast.success(isEditing ? "Empresa atualizada com sucesso!" : "Empresa criada com sucesso!");
@@ -418,6 +431,14 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Horário de Funcionamento */}
+      <BusinessHoursEditor
+        value={horarioFuncionamento}
+        onChange={setHorarioFuncionamento}
+        timezone={timezone}
+        onTimezoneChange={setTimezone}
+      />
 
       {/* Erros */}
       {error && (

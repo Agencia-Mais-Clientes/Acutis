@@ -11,6 +11,7 @@ import type {
   OrigemFilter,
 } from "@/lib/analyze-types";
 import type { ResultadoIA } from "@/lib/types";
+import { calcularTempoRespostaJusto } from "@/lib/business-hours";
 
 // ============================================
 // CONSTANTES
@@ -358,9 +359,12 @@ function formatTime(seconds: number | null): string {
 /**
  * Formata transcrição e calcula métricas
  * Reproduz exatamente o node "Formatador" do N8N
+ * @param messages - Mensagens do chat
+ * @param config - Configuração da empresa (opcional, para cálculo de tempo justo)
  */
 export function formatTranscription(
-  messages: MensagemCliente[]
+  messages: MensagemCliente[],
+  config?: ConfigEmpresa
 ): TranscricaoFormatada | null {
   if (!messages || messages.length === 0) return null;
 
@@ -368,6 +372,8 @@ export function formatTranscription(
   const temposDeResposta: number[] = [];
   let lastCustomerMsgTime: number | null = null;
   let firstResponseTime: number | null = null;
+  let firstResponseTimeJusto: number | null = null;
+  let primeiraMsgForaExpediente = false;
 
   const primeiroId = messages[0].id;
   const ultimoId = messages[messages.length - 1].id;
@@ -409,6 +415,17 @@ export function formatTranscription(
 
           if (firstResponseTime === null) {
             firstResponseTime = diffSeconds;
+            
+            // Calcula tempo justo se config disponível
+            if (config) {
+              const resultado = calcularTempoRespostaJusto(
+                new Date(lastCustomerMsgTime),
+                new Date(timestamp),
+                config
+              );
+              firstResponseTimeJusto = resultado.tempoJustoMs / 1000;
+              primeiraMsgForaExpediente = resultado.foraExpediente;
+            }
           }
         }
         lastCustomerMsgTime = null;
@@ -457,6 +474,9 @@ export function formatTranscription(
     metrics: {
       tempo_primeira_resposta_texto: formatTime(firstResponseTime),
       tempo_medio_resposta_texto: formatTime(media),
+      tempo_primeira_resposta_justo: config ? formatTime(firstResponseTimeJusto) : undefined,
+      tempo_medio_resposta_justo: config ? formatTime(media) : undefined, // TODO: calcular média justa
+      primeira_msg_fora_expediente: config ? primeiraMsgForaExpediente : undefined,
     },
   };
 }
@@ -758,8 +778,8 @@ export async function processChat(
 
     console.log(`[ANALYZE] Chat ${chat.chatid}: ${messages.length} mensagens novas`);
 
-    // 3. Formata transcrição
-    const transcription = formatTranscription(messages);
+    // 3. Formata transcrição (passa config para cálculo de tempo justo)
+    const transcription = formatTranscription(messages, config);
     if (!transcription) {
       return { status: "skipped", message: "Falha ao formatar transcrição" };
     }

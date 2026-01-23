@@ -22,18 +22,12 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Se é admin sem owner selecionado, busca a primeira empresa ativa
-  let effectiveOwnerId = ownerId;
+  // Se é admin sem owner selecionado, redireciona para página de empresas para selecionar
   if (!ownerId && isAdmin) {
-    const empresas = await getCompanies();
-    const empresaAtiva = empresas.find(e => e.ativo);
-    if (empresaAtiva) {
-      await setOwnerIdAsAdmin(empresaAtiva.owner);
-      effectiveOwnerId = empresaAtiva.owner;
-    } else {
-      redirect("/admin/empresas");
-    }
+    redirect("/admin/empresas?selectFirst=true");
   }
+
+  const effectiveOwnerId = ownerId;
 
   if (!effectiveOwnerId) {
     redirect("/login");

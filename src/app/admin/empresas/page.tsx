@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getAdminSession, getCompaniesWithStatus, adminLogout } from "../actions";
 import { CompanyList } from "./_components/CompanyList";
 import { SyncTokensButton } from "./_components/SyncTokensButton";
+import { AutoSelector } from "./_components/AutoSelector";
 import { Activity, LogOut, Plus, Building2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -67,6 +68,9 @@ export default async function AdminEmpresasPage() {
           </div>
         </div>
       </nav>
+
+      {/* Auto Selector Logic */}
+      <AutoSelector />
 
       {/* Content */}
       <main className="container mx-auto p-6">

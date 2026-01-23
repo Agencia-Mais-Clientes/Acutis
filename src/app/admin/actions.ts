@@ -23,6 +23,8 @@ export interface Empresa {
   meta_ads_id: string | null; // ID da conta Meta Ads
   google_ads_id: string | null; // ID da conta Google Ads
   whatsapp_group_id: string | null; // ID do grupo do WhatsApp
+  horario_funcionamento: Record<string, { inicio: string | null; fim: string | null; ativo: boolean }> | null; // Horário de funcionamento por dia
+  timezone: string | null; // Timezone da empresa
   ativo: boolean;
   created_at: string;
 }
@@ -225,6 +227,8 @@ export async function saveCompany(empresa: Partial<Empresa>): Promise<{ success:
         meta_ads_id: empresa.meta_ads_id,
         google_ads_id: empresa.google_ads_id,
         whatsapp_group_id: empresa.whatsapp_group_id,
+        horario_funcionamento: empresa.horario_funcionamento,
+        timezone: empresa.timezone,
         ativo: empresa.ativo ?? true,
       })
       .eq("owner", empresa.owner);
@@ -247,6 +251,8 @@ export async function saveCompany(empresa: Partial<Empresa>): Promise<{ success:
       meta_ads_id: empresa.meta_ads_id,
       google_ads_id: empresa.google_ads_id,
       whatsapp_group_id: empresa.whatsapp_group_id,
+      horario_funcionamento: empresa.horario_funcionamento,
+      timezone: empresa.timezone,
       ativo: empresa.ativo ?? true,
     });
 
@@ -352,6 +358,28 @@ export async function syncInstanceTokens(): Promise<{ updated: number; notFound:
   }
 
   return { updated, notFound };
+}
+
+
+/**
+ * Seleciona a primeira empresa ativa automaticamente (para admin)
+ */
+export async function selectFirstActiveCompany(): Promise<{ success: boolean; error?: string }> {
+  const session = await getAdminSession();
+  if (!session) {
+    return { success: false, error: "Não autorizado" };
+  }
+
+  const empresas = await getCompanies();
+  const empresaAtiva = empresas.find(e => e.ativo);
+
+  if (!empresaAtiva) {
+    return { success: false, error: "Nenhuma empresa ativa encontrada" };
+  }
+
+  // Reuse a lógica de setar cookie do auth
+  const { setOwnerIdAsAdmin } = await import("@/lib/auth");
+  return await setOwnerIdAsAdmin(empresaAtiva.owner);
 }
 
 

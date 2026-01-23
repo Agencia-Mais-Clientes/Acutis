@@ -107,6 +107,7 @@ export interface ConfigEmpresa {
   nome_empresa: string;
   nicho: string;
   objetivo_conversao: string;
+  ativo?: boolean;
   created_at: string;
 }
 
