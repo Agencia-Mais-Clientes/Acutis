@@ -138,3 +138,85 @@ export interface ObjecaoRanking {
   percentual: number;
   icone: string;
 }
+
+// ============================================
+// DASHBOARD SEGMENTADO (VENDAS / SUPORTE)
+// ============================================
+
+/** Filtro de período para o dashboard */
+export interface FiltroData {
+  dataInicio: Date;
+  dataFim: Date;
+}
+
+/** KPIs específicos de Vendas */
+export interface KPIsVendas {
+  totalLeads: number;
+  leadsNovos: number;
+  totalQualificado: number;
+  totalAgendado: number;
+  totalConvertido: number;
+  totalPerdido: number;
+  taxaConversao: number;
+  notaMedia: number;
+}
+
+/** KPIs específicos de Suporte */
+export interface KPIsSuporte {
+  totalTickets: number;
+  ticketsAbertos: number;
+  ticketsEmAndamento: number;
+  ticketsResolvidos: number;
+  tempoMedioResposta: string;
+  satisfacaoMedia: number;
+}
+
+/** KPIs combinados do dashboard */
+export interface KPIsDashboard {
+  vendas: KPIsVendas;
+  suporte: KPIsSuporte;
+  periodo: {
+    inicio: string;
+    fim: string;
+  };
+}
+
+// ============================================
+// FUNIL PERSONALIZADO
+// ============================================
+
+/** Etapa individual do funil */
+export interface EtapaFunil {
+  id: string;
+  nome: string;
+  ordem: number;
+  cor: string;
+  pilar: "vendas" | "suporte";
+}
+
+/** Dados do funil com contagem por etapa */
+export interface DadosFunil {
+  etapa: EtapaFunil;
+  quantidade: number;
+  percentual: number;
+}
+
+// ============================================
+// INSIGHTS PARA AGÊNCIA (ADMIN ONLY)
+// ============================================
+
+/** Insight acionável para gestores de tráfego */
+export interface InsightAgencia {
+  id: string;
+  tipo: "objecao" | "horario" | "canal" | "keywords" | "conversao";
+  titulo: string;
+  descricao: string;
+  sugestao: string;
+  impacto: "alto" | "medio" | "baixo";
+  icone: string;
+  dados?: {
+    valor: number;
+    comparativo?: number;
+    tendencia?: "up" | "down" | "stable";
+  };
+}

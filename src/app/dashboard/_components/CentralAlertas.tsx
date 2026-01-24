@@ -1,85 +1,152 @@
 "use client";
 
+import { useState } from "react";
 import { AnaliseProativa } from "../actions-proactive";
-import { AlertTriangle, AlertOctagon, ChevronRight, Zap } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { AlertTriangle, AlertOctagon, ChevronDown, ChevronUp, Zap, X, Lightbulb } from "lucide-react";
 
 interface CentralAlertasProps {
   alerts: AnaliseProativa[];
 }
 
 export function CentralAlertas({ alerts }: CentralAlertasProps) {
-  if (alerts.length === 0) {
-    return (
-      <Card className="p-4 flex items-center justify-center gap-2 border-none shadow-sm bg-gradient-to-r from-emerald-50 to-teal-50">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-xs font-medium text-emerald-700">
-          ✨ Tudo sob controle. Nenhum alerta crítico.
-        </span>
-      </Card>
-    );
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
+
+  if (alerts.length === 0 || isDismissed) {
+    return null;
   }
 
+  const criticalCount = alerts.filter(a => a.nivel === "critical").length;
+  const warningCount = alerts.length - criticalCount;
+  const firstAlert = alerts[0];
+  const isCritical = firstAlert.nivel === "critical";
+
   return (
-    <div className="space-y-3">
-      {/* Header with gradient accent */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg shadow-lg shadow-red-500/20">
+    <div className="relative">
+      {/* Barra compacta */}
+      <div 
+        className={`flex items-center justify-between px-4 py-3 rounded-xl border cursor-pointer transition-all duration-200 ${
+          isCritical 
+            ? "bg-gradient-to-r from-red-50 to-rose-50 border-red-200 hover:border-red-300" 
+            : "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 hover:border-amber-300"
+        }`}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-3">
+          {/* Ícone pulsante */}
+          <div className={`relative p-2 rounded-lg ${isCritical ? "bg-red-500" : "bg-amber-500"}`}>
             <Zap className="h-4 w-4 text-white" />
+            <div className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full animate-ping ${isCritical ? "bg-red-400" : "bg-amber-400"}`} />
+            <div className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${isCritical ? "bg-red-500" : "bg-amber-500"}`} />
           </div>
-          <h2 className="text-sm font-bold text-foreground">
-            Central de Alertas
-          </h2>
-        </div>
-        <span className="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-lg shadow-red-500/20 animate-pulse">
-          {alerts.length} Críticos
-        </span>
-      </div>
-      
-      {/* Alert Cards */}
-      <div className="flex flex-col gap-3">
-        {alerts.map((alert, i) => {
-          const isCritical = alert.nivel === "critical";
-          return (
-            <div 
-              key={i} 
-              className={`group relative overflow-hidden flex items-start gap-4 p-5 rounded-xl border shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] ${
-                isCritical
-                ? "bg-gradient-to-r from-red-50 via-rose-50 to-orange-50 border-red-200" 
-                : "bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200"
-              }`}
-            >
-              {/* Pulsing indicator */}
-              <div className={`absolute top-4 right-4 w-2 h-2 rounded-full animate-pulse ${isCritical ? "bg-red-500" : "bg-amber-500"}`} />
-              
-              <div className={`p-2 rounded-xl shadow-md ${
-                isCritical ? "bg-gradient-to-br from-red-500 to-rose-600" : "bg-gradient-to-br from-amber-500 to-orange-500"
+          
+          {/* Texto do alerta */}
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-semibold ${isCritical ? "text-red-800" : "text-amber-800"}`}>
+              {firstAlert.titulo}
+            </span>
+            {alerts.length > 1 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                isCritical ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
               }`}>
-                {isCritical ? <AlertOctagon className="h-5 w-5 text-white" /> : <AlertTriangle className="h-5 w-5 text-white" />}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <h4 className={`text-sm font-bold leading-tight ${isCritical ? "text-red-900" : "text-amber-900"}`}>
-                  {alert.titulo}
-                </h4>
-                <p className={`text-xs leading-relaxed mt-1 ${isCritical ? "text-red-700/80" : "text-amber-700/80"}`}>
-                  {alert.mensagem}
-                </p>
-                
-                {alert.sugestao && (
-                  <div className={`mt-3 flex items-start gap-2 text-[11px] p-3 rounded-lg border ${
-                    isCritical ? "bg-white/60 border-red-200 text-red-800" : "bg-white/60 border-amber-200 text-amber-800"
-                  }`}>
-                    <ChevronRight className="h-3 w-3 mt-0.5 shrink-0" />
-                    <span><span className="font-bold">💡 Sugestão:</span> {alert.sugestao}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+                +{alerts.length - 1} mais
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Badges de contagem */}
+          <div className="hidden sm:flex items-center gap-2">
+            {criticalCount > 0 && (
+              <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-500 text-white font-bold">
+                <AlertOctagon className="h-3 w-3" />
+                {criticalCount}
+              </span>
+            )}
+            {warningCount > 0 && (
+              <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-500 text-white font-bold">
+                <AlertTriangle className="h-3 w-3" />
+                {warningCount}
+              </span>
+            )}
+          </div>
+
+          {/* Botão expandir/colapsar */}
+          <button 
+            className={`p-1.5 rounded-lg transition-colors ${
+              isCritical ? "hover:bg-red-100" : "hover:bg-amber-100"
+            }`}
+          >
+            {isExpanded ? (
+              <ChevronUp className={`h-4 w-4 ${isCritical ? "text-red-600" : "text-amber-600"}`} />
+            ) : (
+              <ChevronDown className={`h-4 w-4 ${isCritical ? "text-red-600" : "text-amber-600"}`} />
+            )}
+          </button>
+
+          {/* Botão fechar */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDismissed(true);
+            }}
+            className={`p-1.5 rounded-lg transition-colors ${
+              isCritical ? "hover:bg-red-100" : "hover:bg-amber-100"
+            }`}
+          >
+            <X className={`h-4 w-4 ${isCritical ? "text-red-400" : "text-amber-400"}`} />
+          </button>
+        </div>
       </div>
+
+      {/* Área expandida com detalhes */}
+      {isExpanded && (
+        <div className="mt-2 space-y-2 animate-in slide-in-from-top-2 duration-200">
+          {alerts.map((alert, i) => {
+            const alertCritical = alert.nivel === "critical";
+            return (
+              <div 
+                key={i} 
+                className={`flex items-start gap-3 p-3 rounded-lg border ${
+                  alertCritical 
+                    ? "bg-white border-red-100" 
+                    : "bg-white border-amber-100"
+                }`}
+              >
+                <div className={`p-1.5 rounded-md shrink-0 ${
+                  alertCritical ? "bg-red-100" : "bg-amber-100"
+                }`}>
+                  {alertCritical 
+                    ? <AlertOctagon className="h-4 w-4 text-red-600" /> 
+                    : <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  }
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className={`text-sm font-semibold ${alertCritical ? "text-red-800" : "text-amber-800"}`}>
+                      {alert.titulo}
+                    </h4>
+                  </div>
+                  <p className={`text-xs mt-0.5 ${alertCritical ? "text-red-600/80" : "text-amber-600/80"}`}>
+                    {alert.mensagem}
+                  </p>
+                  
+                  {alert.sugestao && (
+                    <div className={`mt-2 flex items-start gap-1.5 text-xs p-2 rounded-md ${
+                      alertCritical ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
+                    }`}>
+                      <Lightbulb className="h-3 w-3 mt-0.5 shrink-0" />
+                      <span>{alert.sugestao}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

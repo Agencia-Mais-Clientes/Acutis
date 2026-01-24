@@ -5,7 +5,11 @@ import { TabelaAuditoria } from "../_components/TabelaAuditoria";
 import { BarChart3 } from "lucide-react";
 import { FadeIn, SlideUp } from "@/components/ui/motion";
 
-export default async function AnalisesPage() {
+export default async function AnalisesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const ownerId = await getOwnerId();
 
   if (!ownerId) {
@@ -19,6 +23,15 @@ export default async function AnalisesPage() {
   }
 
   const analises = await getAnalises(ownerId);
+  const sp = await searchParams;
+
+  // Filtros iniciais via URL
+  const filtroInicial = {
+    fase: typeof sp.fase === "string" ? sp.fase : undefined,
+    gargalo: typeof sp.gargalo === "string" ? sp.gargalo : undefined,
+    objecao: typeof sp.objecao === "string" ? sp.objecao : undefined,
+    tipo: typeof sp.tipo === "string" ? sp.tipo : undefined,
+  };
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -57,7 +70,7 @@ export default async function AnalisesPage() {
       {/* Tabela de Auditoria */}
       <SlideUp delay={0.1}>
         <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-          <TabelaAuditoria analises={analises} />
+          <TabelaAuditoria analises={analises} filtroInicial={filtroInicial} />
         </div>
       </SlideUp>
     </div>

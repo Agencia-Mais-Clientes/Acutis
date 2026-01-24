@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Menu,
   X,
+  Sparkles,
 } from "lucide-react";
 
 interface SidebarContextType {
@@ -20,6 +21,7 @@ interface SidebarContextType {
   setCollapsed: (value: boolean) => void;
   mobileOpen: boolean;
   setMobileOpen: (value: boolean) => void;
+  isAdmin: boolean;
 }
 
 const SidebarContext = createContext<SidebarContextType>({
@@ -27,13 +29,21 @@ const SidebarContext = createContext<SidebarContextType>({
   setCollapsed: () => {},
   mobileOpen: false,
   setMobileOpen: () => {},
+  isAdmin: false,
 });
 
 export function useSidebar() {
   return useContext(SidebarContext);
 }
 
-const routes = [
+interface RouteItem {
+  label: string;
+  icon: typeof LayoutDashboard;
+  href: string;
+  adminOnly?: boolean;
+}
+
+const routes: RouteItem[] = [
   {
     label: "Dashboard",
     icon: LayoutDashboard,
@@ -45,18 +55,29 @@ const routes = [
     href: "/dashboard/analises",
   },
   {
+    label: "Insights Agência",
+    icon: Sparkles,
+    href: "/dashboard/insights",
+    adminOnly: true,
+  },
+  {
     label: "Configurações",
     icon: Settings,
     href: "/dashboard/settings",
   },
 ];
 
-export function SidebarProvider({ children }: { children: React.ReactNode }) {
+interface SidebarProviderProps {
+  children: React.ReactNode;
+  isAdmin?: boolean;
+}
+
+export function SidebarProvider({ children, isAdmin = false }: SidebarProviderProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <SidebarContext.Provider value={{ collapsed, setCollapsed, mobileOpen, setMobileOpen }}>
+    <SidebarContext.Provider value={{ collapsed, setCollapsed, mobileOpen, setMobileOpen, isAdmin }}>
       {children}
     </SidebarContext.Provider>
   );
@@ -77,7 +98,10 @@ export function MobileMenuButton() {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar();
+  const { collapsed, setCollapsed, mobileOpen, setMobileOpen, isAdmin } = useSidebar();
+
+  // Filtra rotas baseado em permissão admin
+  const visibleRoutes = routes.filter(route => !route.adminOnly || isAdmin);
 
   return (
     <>
@@ -131,7 +155,7 @@ export function AppSidebar() {
         {/* Navigation */}
         <div className="px-3 py-6 flex-1">
           <div className="space-y-1.5">
-            {routes.map((route) => (
+            {visibleRoutes.map((route) => (
               <Link
                 key={route.href}
                 href={route.href}

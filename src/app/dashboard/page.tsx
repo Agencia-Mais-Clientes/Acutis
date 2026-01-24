@@ -1,16 +1,15 @@
 import { redirect } from "next/navigation";
 import { getOwnerId, getEmpresa, clearOwnerId, isAdminSession, isAdminViewing, setOwnerIdAsAdmin } from "@/lib/auth";
-import { getKPIs, getGargalos, getTopObjecoes } from "./actions";
-import { KPICards } from "./_components/KPICards";
-import { MonitorGargalos } from "./_components/MonitorGargalos";
-import { TopObjecoes } from "./_components/TopObjecoes";
+import { getGargalos, getTopObjecoes } from "./actions";
+import { getKPIsDashboard, getDadosFunil } from "./actions-dashboard";
+import { DashboardContent } from "./_components/DashboardContent";
 import { AssistenteIA } from "./_components/AssistenteIA";
 import { CentralAlertas } from "./_components/CentralAlertas";
 import { CompanySelector } from "./_components/CompanySelector";
 import { analisarSaudeNegocio } from "./actions-proactive";
 import { getCompanies } from "@/app/admin/actions";
 import { LogOut, Sparkles, AlertTriangle } from "lucide-react";
-import { FadeIn, SlideUp } from "@/components/ui/motion";
+import { FadeIn } from "@/components/ui/motion";
 
 export default async function DashboardPage() {
   const ownerId = await getOwnerId();
@@ -43,8 +42,10 @@ export default async function DashboardPage() {
   const empresas = isAdmin ? await getCompanies() : [];
 
   // Busca dados em paralelo
-  const [kpis, gargalos, objecoes, alerts] = await Promise.all([
-    getKPIs(effectiveOwnerId),
+  const [kpis, funilVendas, funilSuporte, gargalos, objecoes, alerts] = await Promise.all([
+    getKPIsDashboard(effectiveOwnerId),
+    getDadosFunil(effectiveOwnerId, "vendas"),
+    getDadosFunil(effectiveOwnerId, "suporte"),
     getGargalos(effectiveOwnerId),
     getTopObjecoes(effectiveOwnerId),
     analisarSaudeNegocio(effectiveOwnerId),
@@ -124,31 +125,24 @@ export default async function DashboardPage() {
          </div>
        </FadeIn>
 
-      {/* Main Content */}
-      <div className="space-y-6">
-        {/* KPIs - Main visual focus */}
-        <SlideUp delay={0.1}>
-          <KPICards kpis={kpis} />
-        </SlideUp>
+      {/* Central de Alertas - Only if alerts exist */}
+      {alerts.length > 0 && (
+        <CentralAlertas alerts={alerts} />
+      )}
 
-        {/* Central de Alertas - Only if alerts exist */}
-        {alerts.length > 0 && (
-          <SlideUp delay={0.15}>
-            <CentralAlertas alerts={alerts} />
-          </SlideUp>
-        )}
-
-        {/* Grid com Gargalos e Objeções */}
-        <SlideUp delay={0.2}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <MonitorGargalos gargalos={gargalos} totalLeads={kpis.totalLeads} />
-            <TopObjecoes objecoes={objecoes} />
-          </div>
-        </SlideUp>
-      </div>
+      {/* Main Content - Dashboard Segmentado */}
+      <DashboardContent
+        ownerId={effectiveOwnerId}
+        initialKpis={kpis}
+        initialFunilVendas={funilVendas}
+        initialFunilSuporte={funilSuporte}
+        initialGargalos={gargalos}
+        initialObjecoes={objecoes}
+      />
 
       {/* Assistente IA */}
       <AssistenteIA ownerId={effectiveOwnerId} nomeEmpresa={empresa.nome_empresa} />
     </div>
   );
 }
+

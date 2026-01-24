@@ -10,27 +10,39 @@ import { Button } from "@/components/ui/button";
 import { DetalheLead } from "./DetalheLead";
 import { ChevronDown, Search, X } from "lucide-react";
 
-interface TabelaAuditoriaProps {
-  analises: AnaliseConversa[];
+export interface FiltrosIniciais {
+  fase?: string;
+  gargalo?: string;
+  objecao?: string;
+  tipo?: string;
 }
 
-export function TabelaAuditoria({ analises }: TabelaAuditoriaProps) {
+interface TabelaAuditoriaProps {
+  analises: AnaliseConversa[];
+  filtroInicial?: FiltrosIniciais;
+}
+
+export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProps) {
   const [busca, setBusca] = useState("");
-  const [filtroTipo, setFiltroTipo] = useState<string>("ALL");
-  const [filtroFunil, setFiltroFunil] = useState<string>("ALL");
+  const [filtroTipo, setFiltroTipo] = useState<string>(filtroInicial?.tipo?.toUpperCase() || "ALL");
+  const [filtroFunil, setFiltroFunil] = useState<string>(filtroInicial?.fase?.toUpperCase() || "ALL");
+  const [filtroGargalo, setFiltroGargalo] = useState<string>(filtroInicial?.gargalo || "ALL");
+  const [filtroObjecao, setFiltroObjecao] = useState<string>(filtroInicial?.objecao || "ALL");
   const [filtroOrigem, setFiltroOrigem] = useState<string>("ALL");
   const [filtroTemp, setFiltroTemp] = useState<string>("ALL");
   const [filtroPeriodo, setFiltroPeriodo] = useState<string>("ALL");
   const [analiseSelecionada, setAnaliseSelecionada] = useState<AnaliseConversa | null>(null);
 
   // Check if any filter is active
-  const hasActiveFilters = filtroTipo !== "ALL" || filtroFunil !== "ALL" || filtroOrigem !== "ALL" || filtroTemp !== "ALL" || filtroPeriodo !== "ALL" || busca !== "";
+  const hasActiveFilters = filtroTipo !== "ALL" || filtroFunil !== "ALL" || filtroGargalo !== "ALL" || filtroObjecao !== "ALL" || filtroOrigem !== "ALL" || filtroTemp !== "ALL" || filtroPeriodo !== "ALL" || busca !== "";
 
   // Clear all filters
   const clearFilters = () => {
     setBusca("");
     setFiltroTipo("ALL");
     setFiltroFunil("ALL");
+    setFiltroGargalo("ALL");
+    setFiltroObjecao("ALL");
     setFiltroOrigem("ALL");
     setFiltroTemp("ALL");
     setFiltroPeriodo("ALL");
@@ -49,12 +61,42 @@ export function TabelaAuditoria({ analises }: TabelaAuditoriaProps) {
 
       const funil = a.resultado_ia?.funil_fase?.toLowerCase() || "";
       let matchFunil = filtroFunil === "ALL";
-      if (filtroFunil === "SUCESSO") {
-        matchFunil = funil.includes("vendido") || funil.includes("agendado") || funil.includes("matriculado");
+      if (filtroFunil === "SUCESSO" || filtroFunil === "CONVERTIDO") {
+        matchFunil = funil.includes("vendido") || funil.includes("agendado") || funil.includes("matriculado") || funil.includes("resolvido") || funil.includes("convertido");
+      } else if (filtroFunil === "AGENDADO") {
+        matchFunil = funil.includes("agendado");
+      } else if (filtroFunil === "QUALIFICADO") {
+        matchFunil = funil.includes("qualificado") || funil.includes("negociação") || funil.includes("negociacao") || funil.includes("interessado");
       } else if (filtroFunil === "NEGOCIACAO") {
         matchFunil = funil.includes("negociação") || funil.includes("negociacao");
       } else if (filtroFunil === "PERDIDO") {
-        matchFunil = funil.includes("perdido");
+        matchFunil = funil.includes("perdido") || funil.includes("desistiu") || funil.includes("vácuo") || funil.includes("vacuo");
+      }
+
+      // Filtro Gargalo
+      let matchGargalo = filtroGargalo === "ALL";
+      if (filtroGargalo !== "ALL") {
+        const gargalo = filtroGargalo.toLowerCase();
+        if (gargalo === "negociacao") {
+          matchGargalo = funil.includes("negociação") || funil.includes("negociacao");
+        } else if (gargalo === "sem_resposta") {
+          matchGargalo = funil.includes("vácuo") || funil.includes("vacuo") || funil.includes("sem resposta");
+        } else if (gargalo === "perdido") {
+          matchGargalo = funil.includes("perdido");
+        } else if (gargalo === "travado") {
+          matchGargalo = true; // Todo lead não convertido é tecnicamente travado em algum lugar se não for perdido recente
+        }
+      }
+
+      // Filtro Objeção
+      let matchObjecao = filtroObjecao === "ALL";
+      if (filtroObjecao !== "ALL") {
+        const objecoes = a.resultado_ia?.objecoes_detectadas || [];
+        // Normaliza para comparar sem acentos
+        const termo = filtroObjecao.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        matchObjecao = objecoes.some(o => 
+          o.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo)
+        );
       }
 
       // Origem filter (usa origem_tracking real, não inferência da IA)
@@ -102,9 +144,9 @@ export function TabelaAuditoria({ analises }: TabelaAuditoriaProps) {
         matchPeriodo = dataAnalise >= trintaDiasAtras;
       }
 
-      return matchBusca && matchTipo && matchFunil && matchOrigem && matchTemp && matchPeriodo;
+      return matchBusca && matchTipo && matchFunil && matchGargalo && matchObjecao && matchOrigem && matchTemp && matchPeriodo;
     });
-  }, [analises, busca, filtroTipo, filtroFunil, filtroOrigem, filtroTemp, filtroPeriodo]);
+  }, [analises, busca, filtroTipo, filtroFunil, filtroGargalo, filtroObjecao, filtroOrigem, filtroTemp, filtroPeriodo]);
 
   return (
     <>
