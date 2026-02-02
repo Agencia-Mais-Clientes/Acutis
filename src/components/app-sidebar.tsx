@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Sparkles,
+  Shield,
 } from "lucide-react";
 
 interface SidebarContextType {
@@ -184,6 +185,31 @@ export function AppSidebar() {
               </Link>
             ))}
           </div>
+
+          {/* Admin Back Link */}
+          {isAdmin && (
+            <div className="mt-2 pt-2 border-t border-sidebar-border/50 space-y-1.5">
+              <Link
+                href="/admin/empresas"
+                className={cn(
+                  "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer rounded-xl transition-all duration-200 ease-in-out",
+                  "text-muted-foreground hover:bg-secondary/80 hover:text-foreground",
+                  collapsed && "justify-center"
+                )}
+                title={collapsed ? "Voltar para Admin" : undefined}
+              >
+                <div className={cn("flex items-center", collapsed ? "justify-center" : "flex-1")}>
+                  <Shield 
+                    className={cn(
+                      "h-5 w-5 transition-colors text-muted-foreground/70 group-hover:text-primary", 
+                      collapsed ? "" : "mr-3"
+                    )} 
+                  />
+                  {!collapsed && "Voltar para Admin"}
+                </div>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Collapse button (desktop only) */}
