@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet, Megaphone, Users, Calendar } from "lucide-react";
+import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet, Megaphone, Users, Calendar, UserCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -117,6 +117,7 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
     google_ads_id: empresa?.google_ads_id || "",
     whatsapp_group_id: empresa?.whatsapp_group_id || "",
     dia_relatorio: empresa?.dia_relatorio?.toString() || "",
+    gestor_responsavel: empresa?.gestor_responsavel || "",
   });
 
   // Estado para horário de funcionamento (separado para facilitar tipagem)
@@ -143,6 +144,7 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
       horario_funcionamento: horarioFuncionamento,
       timezone,
       dia_relatorio: formData.dia_relatorio ? parseInt(formData.dia_relatorio) : null,
+      gestor_responsavel: formData.gestor_responsavel,
     });
 
     if (result.success) {
@@ -324,6 +326,23 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
               <p className="text-xs text-gray-400 mt-1.5">
                 ID da aba (gid) na planilha. Geralmente é 0 para a primeira aba.
               </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-gray-100">
+            {/* Gestor Responsável */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <UserCircle className="h-3.5 w-3.5" />
+                Gestor Responsável
+              </label>
+              <Input
+                name="gestor_responsavel"
+                value={formData.gestor_responsavel}
+                onChange={handleChange}
+                placeholder="Nome do gestor da conta"
+                className="bg-gray-50 border-gray-200 text-gray-900 focus:border-violet-500 focus:ring-violet-500"
+              />
             </div>
           </div>
 

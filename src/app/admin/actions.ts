@@ -27,6 +27,7 @@ export interface Empresa {
   timezone: string | null; // Timezone da empresa
   ativo: boolean;
   dia_relatorio: number | null; // 1=Segunda, ..., 7=Domingo
+  gestor_responsavel: string | null; // Nome do gestor
   created_at: string;
 }
 
@@ -232,6 +233,7 @@ export async function saveCompany(empresa: Partial<Empresa>): Promise<{ success:
         timezone: empresa.timezone,
         ativo: empresa.ativo ?? true,
         dia_relatorio: empresa.dia_relatorio ?? null,
+        gestor_responsavel: empresa.gestor_responsavel,
       })
       .eq("owner", empresa.owner);
 
@@ -257,6 +259,7 @@ export async function saveCompany(empresa: Partial<Empresa>): Promise<{ success:
       timezone: empresa.timezone,
       ativo: empresa.ativo ?? true,
       dia_relatorio: empresa.dia_relatorio ?? null,
+      gestor_responsavel: empresa.gestor_responsavel,
     });
 
     if (error) {
