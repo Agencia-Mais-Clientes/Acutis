@@ -383,9 +383,26 @@ export async function selectFirstActiveCompany(): Promise<{ success: boolean; er
     return { success: false, error: "Nenhuma empresa ativa encontrada" };
   }
 
-  // Reuse a lógica de setar cookie do auth
   const { setOwnerIdAsAdmin } = await import("@/lib/auth");
   return await setOwnerIdAsAdmin(empresaAtiva.owner);
+}
+
+/**
+ * Busca lista de gestores (usuários do sistema)
+ */
+export async function getManagers(): Promise<{ id: string; email: string; name?: string }[]> {
+  const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
+
+  if (error) {
+    console.error("[ADMIN] Erro ao buscar usuários:", error);
+    return [];
+  }
+
+  return users.map(u => ({
+    id: u.id,
+    email: u.email || "",
+    name: u.user_metadata?.name || u.email?.split("@")[0] || "Sem nome"
+  }));
 }
 
 

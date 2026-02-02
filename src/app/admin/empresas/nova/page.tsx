@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAdminSession } from "../../actions";
+import { getAdminSession, getManagers } from "../../actions";
 import { CompanyForm } from "../_components/CompanyForm";
 import { Activity, ArrowLeft, Building2 } from "lucide-react";
 import Link from "next/link";
@@ -12,6 +12,8 @@ export default async function NovaEmpresaPage() {
   if (!session) {
     redirect("/admin/login");
   }
+
+  const managers = await getManagers();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -75,7 +77,7 @@ export default async function NovaEmpresaPage() {
           </div>
         </div>
         
-        <CompanyForm />
+        <CompanyForm managers={managers} />
       </main>
     </div>
   );

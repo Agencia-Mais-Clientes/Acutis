@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAdminSession, getCompany } from "../../actions";
+import { getAdminSession, getCompany, getManagers } from "../../actions";
 import { CompanyForm } from "../_components/CompanyForm";
 import { Activity, ArrowLeft, Building2 } from "lucide-react";
 import Link from "next/link";
@@ -23,6 +23,8 @@ export default async function EditarEmpresaPage({ params }: EditarEmpresaPagePro
   if (!empresa) {
     redirect("/admin/empresas");
   }
+
+  const managers = await getManagers();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -87,7 +89,7 @@ export default async function EditarEmpresaPage({ params }: EditarEmpresaPagePro
         </div>
 
         {/* Form */}
-        <CompanyForm empresa={empresa} />
+        <CompanyForm empresa={empresa} managers={managers} />
       </main>
     </div>
   );

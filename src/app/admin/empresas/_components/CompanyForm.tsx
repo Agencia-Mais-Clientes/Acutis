@@ -98,9 +98,10 @@ const TEMPLATES = {
 
 interface CompanyFormProps {
   empresa?: Empresa | null;
+  managers?: { id: string; email: string; name?: string }[];
 }
 
-export function CompanyForm({ empresa }: CompanyFormProps) {
+export function CompanyForm({ empresa, managers = [] }: CompanyFormProps) {
   const router = useRouter();
   const isEditing = !!empresa;
 
@@ -144,7 +145,7 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
       horario_funcionamento: horarioFuncionamento,
       timezone,
       dia_relatorio: formData.dia_relatorio ? parseInt(formData.dia_relatorio) : null,
-      gestor_responsavel: formData.gestor_responsavel,
+      gestor_responsavel: formData.gestor_responsavel === "none" ? null : formData.gestor_responsavel,
     });
 
     if (result.success) {
@@ -244,32 +245,56 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
 
           </div>
 
-          {/* Dia de Relatório */}
-          <div className="pt-4 border-t border-gray-100">
-            <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
-              <Calendar className="h-3.5 w-3.5" />
-              Dia de Envio do Relatório
-            </label>
-            <Select 
-              value={formData.dia_relatorio} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, dia_relatorio: value }))}
-            >
-              <SelectTrigger className="bg-gray-50 border-gray-200 text-gray-900 focus:ring-violet-500">
-                <SelectValue placeholder="Selecione o dia da semana..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Segunda-feira</SelectItem>
-                <SelectItem value="2">Terça-feira</SelectItem>
-                <SelectItem value="3">Quarta-feira</SelectItem>
-                <SelectItem value="4">Quinta-feira</SelectItem>
-                <SelectItem value="5">Sexta-feira</SelectItem>
-                <SelectItem value="6">Sábado</SelectItem>
-                <SelectItem value="7">Domingo</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-gray-400 mt-1.5">
-              Dia da semana em que a IA irá gerar e enviar o relatório de performance.
-            </p>
+          {/* Configurações de Gestão */}
+          <div className="pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Dia de Relatório */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <Calendar className="h-3.5 w-3.5" />
+                Dia de Envio do Relatório
+              </label>
+              <Select 
+                value={formData.dia_relatorio} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, dia_relatorio: value }))}
+              >
+                <SelectTrigger className="bg-gray-50 border-gray-200 text-gray-900 focus:ring-violet-500">
+                  <SelectValue placeholder="Selecione o dia..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Segunda-feira</SelectItem>
+                  <SelectItem value="2">Terça-feira</SelectItem>
+                  <SelectItem value="3">Quarta-feira</SelectItem>
+                  <SelectItem value="4">Quinta-feira</SelectItem>
+                  <SelectItem value="5">Sexta-feira</SelectItem>
+                  <SelectItem value="6">Sábado</SelectItem>
+                  <SelectItem value="7">Domingo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Gestor Responsável */}
+            <div>
+              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+                <UserCircle className="h-3.5 w-3.5" />
+                Gestor Responsável
+              </label>
+              <Select 
+                value={formData.gestor_responsavel} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, gestor_responsavel: value }))}
+              >
+                <SelectTrigger className="bg-gray-50 border-gray-200 text-gray-900 focus:ring-violet-500">
+                  <SelectValue placeholder="Selecione o gestor..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem gestor</SelectItem>
+                  {managers.map(manager => (
+                    <SelectItem key={manager.id} value={manager.name || manager.email}>
+                      {manager.name || manager.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Token UazAPI */}
