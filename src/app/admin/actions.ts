@@ -388,20 +388,24 @@ export async function selectFirstActiveCompany(): Promise<{ success: boolean; er
 }
 
 /**
- * Busca lista de gestores (usuários do sistema)
+ * Busca lista de gestores ativos da tabela gestores
  */
 export async function getManagers(): Promise<{ id: string; email: string; name?: string }[]> {
-  const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
+  const { data, error } = await supabaseAdmin
+    .from("gestores")
+    .select("id, email, nome")
+    .eq("ativo", true)
+    .order("nome");
 
   if (error) {
-    console.error("[ADMIN] Erro ao buscar usuários:", error);
+    console.error("[ADMIN] Erro ao buscar gestores:", error);
     return [];
   }
 
-  return users.map(u => ({
-    id: u.id,
-    email: u.email || "",
-    name: u.user_metadata?.name || u.email?.split("@")[0] || "Sem nome"
+  return data.map(g => ({
+    id: g.id,
+    email: g.email,
+    name: g.nome
   }));
 }
 

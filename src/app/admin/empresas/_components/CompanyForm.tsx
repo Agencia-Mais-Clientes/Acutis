@@ -354,22 +354,7 @@ export function CompanyForm({ empresa, managers = [] }: CompanyFormProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-gray-100">
-            {/* Gestor Responsável */}
-            <div>
-              <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
-                <UserCircle className="h-3.5 w-3.5" />
-                Gestor Responsável
-              </label>
-              <Input
-                name="gestor_responsavel"
-                value={formData.gestor_responsavel}
-                onChange={handleChange}
-                placeholder="Nome do gestor da conta"
-                className="bg-gray-50 border-gray-200 text-gray-900 focus:border-violet-500 focus:ring-violet-500"
-              />
-            </div>
-          </div>
+
 
           {/* Ads */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-gray-100">

@@ -1,0 +1,94 @@
+import { redirect, notFound } from "next/navigation";
+import { getAdminSession, adminLogout } from "../../actions";
+import { getCurrentGestor, getGestor } from "../actions";
+import { GestorForm } from "../_components/GestorForm";
+import { Activity, LogOut, Users } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+
+interface EditGestorPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function EditGestorPage({ params }: EditGestorPageProps) {
+  const { id } = await params;
+  
+  const session = await getAdminSession();
+  if (!session) {
+    redirect("/admin/login");
+  }
+
+  const currentGestor = await getCurrentGestor();
+  if (!currentGestor || currentGestor.role !== "super_admin") {
+    redirect("/dashboard");
+  }
+
+  const gestor = await getGestor(id);
+  if (!gestor) {
+    notFound();
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Navbar */}
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-6 h-16 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Image
+              src="/logos/simbolo-mais-clientes.png"
+              alt="Mais Clientes"
+              width={36}
+              height={36}
+              className="rounded-lg"
+            />
+            <div className="h-8 w-px bg-gray-200" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+                <Activity className="h-5 w-5 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h1 className="text-sm font-black text-gray-900 tracking-tight uppercase">
+                  Acutis
+                </h1>
+                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
+                  Painel Admin
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/admin/gestores"
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <Users className="h-4 w-4" />
+              Gestores
+            </Link>
+            <form action={adminLogout}>
+              <button
+                type="submit"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Sair"
+              >
+                <LogOut className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+              </button>
+            </form>
+          </div>
+        </div>
+      </nav>
+
+      {/* Content */}
+      <main className="container mx-auto p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Editar Gestor</h2>
+          <p className="text-gray-500">Atualize os dados e permissões do gestor</p>
+        </div>
+
+        {/* Form */}
+        <GestorForm gestor={gestor} />
+      </main>
+    </div>
+  );
+}

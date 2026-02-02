@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { getAdminSession, getCompaniesWithStatus, adminLogout } from "../actions";
+import { getCurrentGestor } from "../gestores/actions";
 import { CompanyList } from "./_components/CompanyList";
 import { SyncTokensButton } from "./_components/SyncTokensButton";
 import { AutoSelector } from "./_components/AutoSelector";
-import { Activity, LogOut, Plus, Building2, Sparkles } from "lucide-react";
+import { Activity, LogOut, Plus, Building2, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
@@ -16,6 +17,9 @@ export default async function AdminEmpresasPage() {
   }
 
   const empresas = await getCompaniesWithStatus();
+  const currentGestor = await getCurrentGestor();
+  const isSuperAdmin = currentGestor?.role === "super_admin";
+  
   const totalOnline = empresas.filter(e => e.whatsapp_conectado).length;
   const totalAtivo = empresas.filter(e => e.ativo).length;
 
@@ -51,6 +55,14 @@ export default async function AdminEmpresasPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {isSuperAdmin && (
+              <Link href="/admin/gestores">
+                <Button variant="outline" size="sm" className="text-xs">
+                  <Users className="mr-2 h-3 w-3" />
+                  Gestores
+                </Button>
+              </Link>
+            )}
             <Link href="/dashboard">
               <Button variant="outline" size="sm" className="text-xs">
                 Dashboard
