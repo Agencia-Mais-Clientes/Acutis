@@ -18,6 +18,7 @@ export interface Gestor {
   telefone: string | null;
   role: UserRole;
   ativo: boolean;
+  primeiro_acesso: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -398,4 +399,93 @@ export async function seedCurrentUserAsSuperAdmin(): Promise<{ success: boolean;
 
   revalidatePath("/admin/gestores");
   return { success: true };
+}
+
+// ============================================
+// PERFIL DO USUÁRIO LOGADO
+// ============================================
+
+/**
+ * Atualiza o perfil do usuário logado (nome e telefone)
+ */
+export async function updateMyProfile(data: {
+  nome: string;
+  telefone?: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  const gestor = await getCurrentGestor();
+  if (!gestor) {
+    return { success: false, error: "Usuário não encontrado" };
+  }
+
+  const { error } = await supabaseAdmin
+    .from("gestores")
+    .update({
+      nome: data.nome,
+      telefone: data.telefone || null,
+    })
+    .eq("id", gestor.id);
+
+  if (error) {
+    console.error("[GESTORES] Erro ao atualizar perfil:", error);
+    return { success: false, error: error.message };
+  }
+
+  // Também atualiza no Auth metadata
+  if (gestor.user_id) {
+    await supabaseAdmin.auth.admin.updateUserById(gestor.user_id, {
+      user_metadata: { name: data.nome },
+    });
+  }
+
+  revalidatePath("/admin/perfil");
+  return { success: true };
+}
+
+/**
+ * Altera a senha do usuário logado
+ */
+export async function changeMyPassword(data: {
+  novaSenha: string;
+  confirmarSenha: string;
+}): Promise<{ success: boolean; error?: string }> {
+  if (data.novaSenha !== data.confirmarSenha) {
+    return { success: false, error: "As senhas não coincidem" };
+  }
+
+  if (data.novaSenha.length < 6) {
+    return { success: false, error: "A senha deve ter pelo menos 6 caracteres" };
+  }
+
+  const gestor = await getCurrentGestor();
+  if (!gestor || !gestor.user_id) {
+    return { success: false, error: "Usuário não encontrado" };
+  }
+
+  // Atualiza senha no Supabase Auth
+  const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+    gestor.user_id,
+    { password: data.novaSenha }
+  );
+
+  if (authError) {
+    console.error("[GESTORES] Erro ao alterar senha:", authError);
+    return { success: false, error: authError.message };
+  }
+
+  // Marca que não é mais primeiro acesso
+  await supabaseAdmin
+    .from("gestores")
+    .update({ primeiro_acesso: false })
+    .eq("id", gestor.id);
+
+  revalidatePath("/admin/perfil");
+  return { success: true };
+}
+
+/**
+ * Verifica se o usuário logado precisa redefinir a senha (primeiro acesso)
+ */
+export async function needsPasswordReset(): Promise<boolean> {
+  const gestor = await getCurrentGestor();
+  return gestor?.primeiro_acesso === true;
 }

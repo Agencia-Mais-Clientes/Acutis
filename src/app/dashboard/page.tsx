@@ -8,6 +8,7 @@ import { CentralAlertas } from "./_components/CentralAlertas";
 import { CompanySelector } from "./_components/CompanySelector";
 import { analisarSaudeNegocio } from "./actions-proactive";
 import { getCompanies } from "@/app/admin/actions";
+import { needsPasswordReset } from "@/app/admin/gestores/actions";
 import { LogOut, Sparkles, AlertTriangle } from "lucide-react";
 import { FadeIn } from "@/components/ui/motion";
 
@@ -19,6 +20,14 @@ export default async function DashboardPage() {
   // Se não tem owner e não é admin, redireciona para login
   if (!ownerId && !isAdmin) {
     redirect("/login");
+  }
+
+  // Se é admin, verifica se precisa redefinir senha
+  if (isAdmin) {
+    const precisaTrocarSenha = await needsPasswordReset();
+    if (precisaTrocarSenha) {
+      redirect("/admin/perfil");
+    }
   }
 
   // Se é admin sem owner selecionado, redireciona para página de empresas para selecionar

@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { getAdminSession, getCompaniesWithStatus, adminLogout } from "../actions";
-import { getCurrentGestor } from "../gestores/actions";
+import { getCurrentGestor, needsPasswordReset } from "../gestores/actions";
 import { CompanyList } from "./_components/CompanyList";
 import { SyncTokensButton } from "./_components/SyncTokensButton";
 import { AutoSelector } from "./_components/AutoSelector";
-import { Activity, LogOut, Plus, Building2, Sparkles, Users } from "lucide-react";
+import { Activity, LogOut, Plus, Building2, Sparkles, Users, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,6 +14,12 @@ export default async function AdminEmpresasPage() {
 
   if (!session) {
     redirect("/admin/login");
+  }
+
+  // Verifica se precisa redefinir senha (primeiro acesso)
+  const precisaTrocarSenha = await needsPasswordReset();
+  if (precisaTrocarSenha) {
+    redirect("/admin/perfil");
   }
 
   const empresas = await getCompaniesWithStatus();
@@ -66,6 +72,12 @@ export default async function AdminEmpresasPage() {
             <Link href="/dashboard">
               <Button variant="outline" size="sm" className="text-xs">
                 Dashboard
+              </Button>
+            </Link>
+            <Link href="/admin/perfil">
+              <Button variant="ghost" size="sm" className="text-xs">
+                <User className="mr-2 h-3 w-3" />
+                Perfil
               </Button>
             </Link>
             <form action={adminLogout}>
