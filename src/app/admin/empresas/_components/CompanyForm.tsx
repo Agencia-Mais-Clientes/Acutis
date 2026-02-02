@@ -8,7 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet, Megaphone, Users } from "lucide-react";
+import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet, Megaphone, Users, Calendar } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
 import { BusinessHoursEditor } from "./BusinessHoursEditor";
 import type { HorarioFuncionamento } from "@/lib/analyze-types";
@@ -109,6 +116,7 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
     meta_ads_id: empresa?.meta_ads_id || "",
     google_ads_id: empresa?.google_ads_id || "",
     whatsapp_group_id: empresa?.whatsapp_group_id || "",
+    dia_relatorio: empresa?.dia_relatorio?.toString() || "",
   });
 
   // Estado para horário de funcionamento (separado para facilitar tipagem)
@@ -134,6 +142,7 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
       ...formData,
       horario_funcionamento: horarioFuncionamento,
       timezone,
+      dia_relatorio: formData.dia_relatorio ? parseInt(formData.dia_relatorio) : null,
     });
 
     if (result.success) {
@@ -230,6 +239,35 @@ export function CompanyForm({ empresa }: CompanyFormProps) {
                 O que a IA deve considerar como &quot;sucesso&quot;
               </p>
             </div>
+
+          </div>
+
+          {/* Dia de Relatório */}
+          <div className="pt-4 border-t border-gray-100">
+            <label className="flex items-center gap-2 text-xs text-gray-500 mb-2 uppercase font-bold">
+              <Calendar className="h-3.5 w-3.5" />
+              Dia de Envio do Relatório
+            </label>
+            <Select 
+              value={formData.dia_relatorio} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, dia_relatorio: value }))}
+            >
+              <SelectTrigger className="bg-gray-50 border-gray-200 text-gray-900 focus:ring-violet-500">
+                <SelectValue placeholder="Selecione o dia da semana..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Segunda-feira</SelectItem>
+                <SelectItem value="2">Terça-feira</SelectItem>
+                <SelectItem value="3">Quarta-feira</SelectItem>
+                <SelectItem value="4">Quinta-feira</SelectItem>
+                <SelectItem value="5">Sexta-feira</SelectItem>
+                <SelectItem value="6">Sábado</SelectItem>
+                <SelectItem value="7">Domingo</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-400 mt-1.5">
+              Dia da semana em que a IA irá gerar e enviar o relatório de performance.
+            </p>
           </div>
 
           {/* Token UazAPI */}

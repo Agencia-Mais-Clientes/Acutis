@@ -26,6 +26,7 @@ export interface Empresa {
   horario_funcionamento: Record<string, { inicio: string | null; fim: string | null; ativo: boolean }> | null; // Horário de funcionamento por dia
   timezone: string | null; // Timezone da empresa
   ativo: boolean;
+  dia_relatorio: number | null; // 1=Segunda, ..., 7=Domingo
   created_at: string;
 }
 
@@ -230,6 +231,7 @@ export async function saveCompany(empresa: Partial<Empresa>): Promise<{ success:
         horario_funcionamento: empresa.horario_funcionamento,
         timezone: empresa.timezone,
         ativo: empresa.ativo ?? true,
+        dia_relatorio: empresa.dia_relatorio ?? null,
       })
       .eq("owner", empresa.owner);
 
@@ -254,6 +256,7 @@ export async function saveCompany(empresa: Partial<Empresa>): Promise<{ success:
       horario_funcionamento: empresa.horario_funcionamento,
       timezone: empresa.timezone,
       ativo: empresa.ativo ?? true,
+      dia_relatorio: empresa.dia_relatorio ?? null,
     });
 
     if (error) {
