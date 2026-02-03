@@ -11,6 +11,7 @@ import {
   InsightAgencia 
 } from "@/lib/types";
 import { getAnalises } from "./actions";
+import { getCategoriaObjecao } from "@/lib/objecao-utils";
 
 // ============================================
 // HELPERS DE DATA
@@ -334,7 +335,7 @@ export async function getInsightsAgencia(ownerId: string): Promise<InsightAgenci
     const obs = a.resultado_ia?.objecoes_detectadas || [];
     obs.forEach((o) => {
       if (o) {
-        const cat = categorizarObjecao(o);
+        const cat = getCategoriaObjecao(o);
         objecoes[cat] = (objecoes[cat] || 0) + 1;
       }
     });
@@ -344,12 +345,13 @@ export async function getInsightsAgencia(ownerId: string): Promise<InsightAgenci
   if (topObjecao) {
     const [categoria, qtd] = topObjecao;
     const percentual = Math.round((qtd / leadsVendas.length) * 100);
+    const label = CATEGORIA_LABELS_INSIGHT[categoria] || categoria;
     
     insights.push({
       id: "objecao-1",
       tipo: "objecao",
-      titulo: `Objeção #1: ${categoria}`,
-      descricao: `${percentual}% dos leads mencionam "${categoria}" como barreira.`,
+      titulo: `Objeção #1: ${label}`,
+      descricao: `${percentual}% dos leads mencionam "${label}" como barreira.`,
       sugestao: getSugestaoObjecao(categoria),
       impacto: percentual > 30 ? "alto" : percentual > 15 ? "medio" : "baixo",
       icone: "💬",
@@ -452,22 +454,33 @@ export async function getInsightsAgencia(ownerId: string): Promise<InsightAgenci
   return insights;
 }
 
-function categorizarObjecao(texto: string): string {
-  const t = texto.toLowerCase();
-  if (t.includes("preço") || t.includes("caro") || t.includes("valor")) return "Preço";
-  if (t.includes("horário") || t.includes("tempo")) return "Horário";
-  if (t.includes("local") || t.includes("distância")) return "Localização";
-  if (t.includes("contrato") || t.includes("fidelidade")) return "Contrato";
-  return "Outros";
-}
+// Função de categorização importada de @/lib/objecao-utils
+// Labels para exibição nos insights
+const CATEGORIA_LABELS_INSIGHT: Record<string, string> = {
+  preco: "Preço",
+  tempo: "Horário",
+  localizacao: "Localização",
+  saude: "Saúde",
+  compromisso: "Medo de Compromisso",
+  consulta_terceiros: "Consulta Terceiros",
+  adiamento: "Adiamento",
+  fidelidade: "Contrato",
+  concorrencia: "Concorrência",
+  interesse_baixo: "Interesse Baixo",
+};
 
 function getSugestaoObjecao(categoria: string): string {
   const sugestoes: Record<string, string> = {
-    Preço: "Destaque o valor agregado nos anúncios. Inclua parcelas e promoções no copy.",
-    Horário: "Mencione flexibilidade de horários e opções de aulas nos anúncios.",
-    Localização: "Use segmentação por raio no Meta Ads. Destaque facilidade de acesso.",
-    Contrato: "Ofereça período de teste sem compromisso nas campanhas.",
-    Outros: "Analise as conversas para identificar padrões específicos.",
+    preco: "Destaque o valor agregado nos anúncios. Inclua parcelas e promoções no copy.",
+    tempo: "Mencione flexibilidade de horários e opções de aulas nos anúncios.",
+    localizacao: "Use segmentação por raio no Meta Ads. Destaque facilidade de acesso.",
+    saude: "Mostre que há acompanhamento profissional e adaptações para todos os níveis.",
+    compromisso: "Ofereça aulas experimentais sem compromisso e ambiente acolhedor.",
+    consulta_terceiros: "Crie promoções para casais/famílias e flexibilize agendamentos.",
+    adiamento: "Crie urgência com promoções por tempo limitado e benefícios para decisão rápida.",
+    fidelidade: "Ofereça período de teste sem compromisso e destaque flexibilidade.",
+    concorrencia: "Destaque diferenciais competitivos únicos e depoimentos de clientes.",
+    interesse_baixo: "Qualifique melhor os leads antes de investir em nutrição.",
   };
-  return sugestoes[categoria] || sugestoes.Outros;
+  return sugestoes[categoria] || "Analise as conversas para identificar padrões específicos.";
 }

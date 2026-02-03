@@ -41,6 +41,7 @@ function getCategoriaLabel(categoria: string): string {
     fidelidade: "📝 Contrato",
     concorrencia: "🏆 Concorrência",
     interesse_baixo: "😐 Interesse",
+    outros: "❓ Outros",
   };
   return labels[categoria] || categoria;
 }

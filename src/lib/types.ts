@@ -65,7 +65,8 @@ export type CategoriaObjecao =
   | "adiamento"
   | "fidelidade"
   | "concorrencia"
-  | "interesse_baixo";
+  | "interesse_baixo"
+  | "outros";  // Fallback para objeções não classificáveis
 
 /** Objeção detectada com categoria e evidência */
 export interface ObjecaoDetectada {
@@ -156,7 +157,8 @@ export interface Gargalo {
 
 // Tipo para ranking de objeções
 export interface ObjecaoRanking {
-  nome: string;
+  nome: string;           // Label amigável (ex: "Preço")
+  categoria: string;      // Chave da categoria (ex: "preco")
   quantidade: number;
   percentual: number;
   icone: string;

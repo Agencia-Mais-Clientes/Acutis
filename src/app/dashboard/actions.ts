@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from "@/lib/supabase";
 import { AnaliseConversa, KPIs, Gargalo, ObjecaoRanking, CategoriaObjecao, ObjecaoDetectada } from "@/lib/types";
+import { categorizarObjecaoLegado } from "@/lib/objecao-utils";
 
 // Busca todas as análises do owner com origem real do tracking
 export async function getAnalises(ownerId: string): Promise<AnaliseConversa[]> {
@@ -189,6 +190,7 @@ const CATEGORIA_LABELS: Record<CategoriaObjecao, string> = {
   fidelidade: "Contrato/Fidelidade",
   concorrencia: "Concorrência",
   interesse_baixo: "Interesse Baixo",
+  outros: "Outros",
 };
 
 // Ícone por categoria de objeção
@@ -203,50 +205,10 @@ const CATEGORIA_ICONES: Record<CategoriaObjecao, string> = {
   fidelidade: "📝",
   concorrencia: "🏆",
   interesse_baixo: "😐",
+  outros: "❓",
 };
 
-// Categoriza objeções do formato legado (string) para o novo formato
-function categorizeLegacyObjecao(texto: string): CategoriaObjecao {
-  const t = texto.toLowerCase();
-  
-  if (t.includes("preço") || t.includes("caro") || t.includes("valor") || t.includes("taxa") || t.includes("custo") || t.includes("orçamento") || t.includes("dinheiro")) {
-    return "preco";
-  }
-  if (t.includes("horário") || t.includes("agenda") || t.includes("tempo") || t.includes("tarde") || t.includes("cedo") || t.includes("trabalho")) {
-    return "tempo";
-  }
-  if (t.includes("local") || t.includes("longe") || t.includes("distância") || t.includes("perto") || t.includes("endereço")) {
-    return "localizacao";
-  }
-  if (t.includes("saúde") || t.includes("saude") || t.includes("lesão") || t.includes("lesao") || t.includes("médico") || t.includes("medico") || t.includes("joelho") || t.includes("coluna") || t.includes("grávida") || t.includes("gravida") || t.includes("cirurgia") || t.includes("problema")) {
-    return "saude";
-  }
-  if (t.includes("medo") || t.includes("desisto") || t.includes("desistir") || t.includes("conseguir") || t.includes("disciplina")) {
-    return "compromisso";
-  }
-  if (t.includes("marido") || t.includes("esposa") || t.includes("mãe") || t.includes("mae") || t.includes("pai") || t.includes("família") || t.includes("familia") || t.includes("consultar")) {
-    return "consulta_terceiros";
-  }
-  if (t.includes("pensar") || t.includes("analisar") || t.includes("depois") || t.includes("mês que vem") || t.includes("semana que vem") || t.includes("momento") || t.includes("agora não")) {
-    return "adiamento";
-  }
-  if (t.includes("fidelidade") || t.includes("contrato") || t.includes("multa") || t.includes("período") || t.includes("cancelar")) {
-    return "fidelidade";
-  }
-  if (t.includes("outra") || t.includes("concorrente") || t.includes("pesquisar") || t.includes("opção") || t.includes("opcao") || t.includes("comparar")) {
-    return "concorrencia";
-  }
-  if (t.includes("curiosidade") || t.includes("só saber") || t.includes("talvez") || t.includes("não sei se")) {
-    return "interesse_baixo";
-  }
-  
-  // Fallback mais inteligente baseado em padrões comuns
-  if (t.includes("não") && (t.includes("posso") || t.includes("consigo") || t.includes("dá"))) {
-    return "adiamento";
-  }
-  
-  return "adiamento"; // Default para adiamento ao invés de "outros"
-}
+// Função de categorização importada de @/lib/objecao-utils
 
 // Ranking de objeções
 export async function getTopObjecoes(ownerId: string): Promise<ObjecaoRanking[]> {
@@ -267,6 +229,7 @@ export async function getTopObjecoes(ownerId: string): Promise<ObjecaoRanking[]>
     fidelidade: 0,
     concorrencia: 0,
     interesse_baixo: 0,
+    outros: 0,
   };
 
   leadsVendas.forEach((a) => {
@@ -284,7 +247,7 @@ export async function getTopObjecoes(ownerId: string): Promise<ObjecaoRanking[]>
         }
       } else if (typeof obj === "string" && obj.trim()) {
         // Formato legado: string
-        const categoria = categorizeLegacyObjecao(obj);
+        const categoria = categorizarObjecaoLegado(obj);
         contagem[categoria]++;
       }
     });
@@ -299,6 +262,7 @@ export async function getTopObjecoes(ownerId: string): Promise<ObjecaoRanking[]>
     .slice(0, 5)
     .map(([categoria, quantidade]) => ({
       nome: CATEGORIA_LABELS[categoria],
+      categoria,  // Chave da categoria para filtragem
       quantidade,
       percentual: total > 0 ? Math.round((quantidade / total) * 100) : 0,
       icone: CATEGORIA_ICONES[categoria],

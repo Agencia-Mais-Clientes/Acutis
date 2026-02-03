@@ -64,11 +64,12 @@ export function TopObjecoes({ objecoes }: TopObjecoesProps) {
         {objecoes.map((objecao, index) => {
           const width = Math.max((objecao.quantidade / maxQuantidade) * 100, 10);
           const colors = rankColors[index] || rankColors[4];
-          const filterParam = getObjecaoFilterParam(objecao.nome);
+          // Usa a chave da categoria diretamente para o filtro
+          const filterParam = objecao.categoria;
           
           return (
             <Link 
-              key={objecao.nome} 
+              key={objecao.categoria} 
               href={`/dashboard/analises?objecao=${filterParam}`}
               className="block group"
             >

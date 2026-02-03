@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { AnaliseConversa } from "@/lib/types";
+import { getCategoriaObjecao } from "@/lib/objecao-utils";
 
 export const maxDuration = 30;
 
@@ -101,13 +102,22 @@ export async function GET(req: NextRequest) {
     const objecoesMap: Record<string, number> = {};
     vendas.forEach((a) => {
       (a.resultado_ia?.objecoes_detectadas || []).forEach((obj) => {
-        if (obj) objecoesMap[obj] = (objecoesMap[obj] || 0) + 1;
+        if (obj) {
+          const categoria = getCategoriaObjecao(obj);
+          objecoesMap[categoria] = (objecoesMap[categoria] || 0) + 1;
+        }
       });
     });
+    const LABELS: Record<string, string> = {
+      preco: "Preço", tempo: "Horário", localizacao: "Localização",
+      saude: "Saúde", compromisso: "Compromisso", consulta_terceiros: "Consulta Terceiros",
+      adiamento: "Adiamento", fidelidade: "Contrato", concorrencia: "Concorrência",
+      interesse_baixo: "Interesse Baixo",
+    };
     const topObjecoes = Object.entries(objecoesMap)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
-      .map(([nome, quantidade]) => ({ nome, quantidade }));
+      .map(([cat, quantidade]) => ({ nome: LABELS[cat] || cat, quantidade }));
 
     // Destaque positivo (melhor nota)
     const melhorNota = listaAnalises.reduce(

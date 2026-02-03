@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { DetalheLead } from "./DetalheLead";
 import { ChevronDown, Search, X } from "lucide-react";
 
+import { categorizarObjecaoLegado } from "@/lib/objecao-utils";
+
 export interface FiltrosIniciais {
   fase?: string;
   gargalo?: string;
@@ -88,22 +90,23 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
         }
       }
 
-      // Filtro Objeção
+      // Filtro Objeção - busca pela chave da categoria (ex: "preco", "tempo")
       let matchObjecao = filtroObjecao === "ALL";
       if (filtroObjecao !== "ALL") {
         const objecoes = a.resultado_ia?.objecoes_detectadas || [];
-        // Normaliza para comparar sem acentos
-        const termo = filtroObjecao.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const termoCategoria = filtroObjecao.toLowerCase();
+        
         matchObjecao = objecoes.some(obj => {
           if (!obj) return false;
           // Verifica se é o novo formato (objeto) ou legado (string)
           if (typeof obj === "object" && "categoria" in obj) {
-            // Novo formato: verifica categoria
-            const categoria = obj.categoria as string;
-            return categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo);
+            // Novo formato: match exato pela categoria
+            const categoria = (obj.categoria as string).toLowerCase();
+            return categoria === termoCategoria;
           } else if (typeof obj === "string") {
-            // Formato legado
-            return obj.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo);
+            // Formato legado: categoriza o texto usando função centralizada
+            const categoriaInferida = categorizarObjecaoLegado(obj);
+            return categoriaInferida === termoCategoria;
           }
           return false;
         });
