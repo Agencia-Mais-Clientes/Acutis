@@ -28,6 +28,23 @@ function mapOrigemTracking(origem: string): string {
   }
 }
 
+// Mapeia categoria de objeção para label amigável
+function getCategoriaLabel(categoria: string): string {
+  const labels: Record<string, string> = {
+    preco: "💰 Preço",
+    tempo: "⏰ Tempo",
+    localizacao: "📍 Local",
+    saude: "🏥 Saúde",
+    compromisso: "😰 Compromisso",
+    consulta_terceiros: "👨‍👩‍👧 Consulta",
+    adiamento: "📅 Adiamento",
+    fidelidade: "📝 Contrato",
+    concorrencia: "🏆 Concorrência",
+    interesse_baixo: "😐 Interesse",
+  };
+  return labels[categoria] || categoria;
+}
+
 export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
   const resultado = analise.resultado_ia;
   const nome = resultado?.dados_cadastrais?.nome_lead || "Não identificado";
@@ -134,14 +151,20 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
                 <AlertTriangle className="h-4 w-4" /> Objeções Identificadas
               </h3>
               <div className="flex flex-wrap gap-2">
-                {objecoes.map((obj, i) => (
-                  <Badge
-                    key={i}
-                    className="bg-amber-100 border-amber-300 text-amber-800 text-xs px-3 py-1.5 font-semibold rounded-lg"
-                  >
-                    {obj}
-                  </Badge>
-                ))}
+                {objecoes.map((obj, i) => {
+                  // Suporta novo formato (objeto) e legado (string)
+                  const texto = typeof obj === "object" && "categoria" in obj 
+                    ? `${getCategoriaLabel(obj.categoria)}: ${obj.evidencia}`
+                    : String(obj);
+                  return (
+                    <Badge
+                      key={i}
+                      className="bg-amber-100 border-amber-300 text-amber-800 text-xs px-3 py-1.5 font-semibold rounded-lg"
+                    >
+                      {texto}
+                    </Badge>
+                  );
+                })}
               </div>
             </div>
           )}

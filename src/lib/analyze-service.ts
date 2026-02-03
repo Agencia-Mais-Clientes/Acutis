@@ -566,6 +566,27 @@ Avalie CADA pilar separadamente com nota 0-100:
    - Contornou a objeção ou aceitou passivamente?
    - Usou técnicas como espelhamento ou reformulação?
 
+# ═══════════════════════════════════════════════════════════
+# CATEGORIZAÇÃO DE OBJEÇÕES (CRÍTICO - SEJA ASSERTIVO)
+# ═══════════════════════════════════════════════════════════
+
+Ao detectar objeções, classifique CADA UMA em uma das categorias abaixo:
+
+| Categoria | Descrição | Exemplos de falas do cliente |
+|-----------|-----------|------------------------------|
+| **preco** | Valor, custo, fora do orçamento | "Tá caro", "Não tenho como pagar", "Fora do orçamento", "Muito dinheiro", "Apertado" |
+| **tempo** | Falta de tempo, horário incompatível | "Não tenho tempo", "Meu horário não bate", "Trabalho muito", "Chego tarde" |
+| **localizacao** | Distância, endereço, deslocamento | "É longe", "Não tem perto de casa", "Complicado ir até aí" |
+| **saude** | Problemas de saúde, lesões, restrições médicas | "Tenho problema no joelho", "Estou com lesão", "Médico não liberou", "Estou grávida", "Tenho hérnia" |
+| **compromisso** | Medo de não continuar, histórico de desistência | "Tenho medo de não ir", "Sempre desisto", "Não sei se vou conseguir manter" |
+| **consulta_terceiros** | Precisa consultar alguém antes de decidir | "Vou falar com meu marido/esposa", "Preciso ver com minha mãe", "Tenho que consultar" |
+| **adiamento** | Deixar para depois, procrastinação | "Mês que vem", "Depois volto", "Preciso pensar", "Vou analisar", "Não é o momento" |
+| **fidelidade** | Contrato, multa, compromisso longo | "Não quero contrato", "E se eu quiser sair?", "Tem multa?", "Período mínimo?" |
+| **concorrencia** | Comparando com outras opções | "Tô vendo outras opções", "Outra academia é mais barata", "Vou pesquisar mais" |
+| **interesse_baixo** | Curiosidade, sem intenção real | "Só queria saber o preço", "Foi só curiosidade", "Talvez um dia" |
+
+**REGRA CRÍTICA**: Se a objeção não se encaixar CLARAMENTE em uma categoria acima, use a que mais se aproxima. Evite ao máximo não categorizar.
+
 Para CADA pilar, forneça:
 - **nota**: 0-100 (seja justo mas crítico)
 - **feedback**: O que você observou de concreto (cite trechos se possível)
@@ -634,7 +655,12 @@ Responda APENAS com JSON válido, sem formatação markdown:
     "origem_detectada": "Meta" | "Google" | "Indicação" | "Orgânico"
   },
   "temperatura": "Quente" | "Morno" | "Frio",
-  "objecoes_detectadas": ["string"],
+  "objecoes_detectadas": [
+    {
+      "categoria": "preco" | "tempo" | "localizacao" | "saude" | "compromisso" | "consulta_terceiros" | "adiamento" | "fidelidade" | "concorrencia" | "interesse_baixo",
+      "evidencia": "Texto exato ou paráfrase da fala do cliente que demonstra a objeção"
+    }
+  ],
   "proximo_passo_sugerido": "string",
   "resumo_executivo": "string",
   "funil_fase": "Status conforme regra acima",

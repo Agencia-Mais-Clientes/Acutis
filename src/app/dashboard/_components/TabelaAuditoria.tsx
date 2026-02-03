@@ -94,9 +94,19 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
         const objecoes = a.resultado_ia?.objecoes_detectadas || [];
         // Normaliza para comparar sem acentos
         const termo = filtroObjecao.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        matchObjecao = objecoes.some(o => 
-          o.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo)
-        );
+        matchObjecao = objecoes.some(obj => {
+          if (!obj) return false;
+          // Verifica se é o novo formato (objeto) ou legado (string)
+          if (typeof obj === "object" && "categoria" in obj) {
+            // Novo formato: verifica categoria
+            const categoria = obj.categoria as string;
+            return categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo);
+          } else if (typeof obj === "string") {
+            // Formato legado
+            return obj.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo);
+          }
+          return false;
+        });
       }
 
       // Origem filter (usa origem_tracking real, não inferência da IA)

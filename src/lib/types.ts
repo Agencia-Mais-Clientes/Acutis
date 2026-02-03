@@ -50,6 +50,29 @@ export interface AnaliseQualitativa {
   diagnostico_final: string;       // Resumo do que causou sucesso ou fracasso
 }
 
+// ============================================
+// OBJEÇÕES CATEGORIZADAS (NOVO)
+// ============================================
+
+/** Categorias de objeções predefinidas */
+export type CategoriaObjecao =
+  | "preco"
+  | "tempo"
+  | "localizacao"
+  | "saude"
+  | "compromisso"
+  | "consulta_terceiros"
+  | "adiamento"
+  | "fidelidade"
+  | "concorrencia"
+  | "interesse_baixo";
+
+/** Objeção detectada com categoria e evidência */
+export interface ObjecaoDetectada {
+  categoria: CategoriaObjecao;
+  evidencia: string;  // Texto exato ou paráfrase da fala do cliente
+}
+
 export interface Metrics {
   tempo_primeira_resposta_texto: string;
   tempo_medio_resposta_texto: string;
@@ -66,7 +89,7 @@ export interface ResultadoIA {
   proximo_passo_sugerido: string;
   conversao_realizada: boolean;
   detalhes_conversao: string | null;
-  objecoes_detectadas: string[];
+  objecoes_detectadas: string[] | ObjecaoDetectada[]; // Suporta formato legado (string[]) e novo (ObjecaoDetectada[])
   dados_cadastrais: DadosCadastrais;
   performance_vendas: PerformanceVendas;
   metrics: Metrics;
