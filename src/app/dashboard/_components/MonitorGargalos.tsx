@@ -69,17 +69,22 @@ export function MonitorGargalos({ gargalos, totalLeads }: MonitorGargalosProps) 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-5 flex-1 overflow-y-auto max-h-[300px] scrollbar-thin scrollbar-thumb-gray-200">
-        {gargalos.map((gargalo) => {
-          const percentual = totalLeads > 0 ? Math.round((gargalo.quantidade / totalLeads) * 100) : 0;
-          const isRed = gargalo.cor === "red";
-          const filterParam = getGargaloFilterParam(gargalo.descricao);
-          
-          return (
-            <Link 
-              key={`${gargalo.tipo}-${gargalo.descricao}`} 
-              href={`/dashboard/analises?gargalo=${filterParam}`}
-              className="block group"
-            >
+          {gargalos.map((gargalo) => {
+            const percentual = totalLeads > 0 ? Math.round((gargalo.quantidade / totalLeads) * 100) : 0;
+            const isRed = gargalo.cor === "red";
+            const filterParam = getGargaloFilterParam(gargalo.descricao);
+            
+            // Usa ?fase=perdido para tipo perdido, pois é fase do funil
+            const href = gargalo.tipo === "perdido" || filterParam === "perdido"
+              ? "/dashboard/analises?fase=perdido"
+              : `/dashboard/analises?gargalo=${filterParam}`;
+            
+            return (
+              <Link 
+                key={`${gargalo.tipo}-${gargalo.descricao}`} 
+                href={href}
+                className="block group"
+              >
               <div className="space-y-2 p-2 rounded-lg transition-colors hover:bg-gray-50 -mx-2">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">

@@ -151,7 +151,7 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
               <h3 className="text-[11px] font-bold text-amber-600 uppercase tracking-widest flex items-center gap-2 mb-3">
                 <AlertTriangle className="h-4 w-4" /> Objeções Identificadas
               </h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-2">
                 {objecoes.map((obj, i) => {
                   // Suporta novo formato (objeto) e legado (string)
                   const texto = typeof obj === "object" && "categoria" in obj 
@@ -160,7 +160,7 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
                   return (
                     <Badge
                       key={i}
-                      className="bg-amber-100 border-amber-300 text-amber-800 text-xs px-3 py-1.5 font-semibold rounded-lg"
+                      className="bg-amber-100 border-amber-300 text-amber-800 text-xs px-3 py-1.5 font-semibold rounded-lg w-full break-words whitespace-normal text-left"
                     >
                       {texto}
                     </Badge>

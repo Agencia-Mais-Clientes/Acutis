@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnaliseProativa } from "../actions-proactive";
-import { AlertTriangle, AlertOctagon, ChevronDown, ChevronUp, Zap, X, Lightbulb } from "lucide-react";
+import { AlertTriangle, AlertOctagon, ChevronDown, ChevronUp, Zap, X, Lightbulb, ExternalLink } from "lucide-react";
 
 interface CentralAlertasProps {
   alerts: AnaliseProativa[];
 }
 
 export function CentralAlertas({ alerts }: CentralAlertasProps) {
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
@@ -105,14 +107,23 @@ export function CentralAlertas({ alerts }: CentralAlertasProps) {
         <div className="mt-2 space-y-2 animate-in slide-in-from-top-2 duration-200">
           {alerts.map((alert, i) => {
             const alertCritical = alert.nivel === "critical";
+            const hasLink = !!alert.linkUrl;
+            
+            const handleAlertClick = () => {
+              if (alert.linkUrl) {
+                router.push(alert.linkUrl);
+              }
+            };
+            
             return (
               <div 
                 key={i} 
-                className={`flex items-start gap-3 p-3 rounded-lg border ${
+                onClick={hasLink ? handleAlertClick : undefined}
+                className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
                   alertCritical 
                     ? "bg-white border-red-100" 
                     : "bg-white border-amber-100"
-                }`}
+                } ${hasLink ? "cursor-pointer hover:shadow-md hover:scale-[1.01]" : ""}`}
               >
                 <div className={`p-1.5 rounded-md shrink-0 ${
                   alertCritical ? "bg-red-100" : "bg-amber-100"
@@ -128,6 +139,9 @@ export function CentralAlertas({ alerts }: CentralAlertasProps) {
                     <h4 className={`text-sm font-semibold ${alertCritical ? "text-red-800" : "text-amber-800"}`}>
                       {alert.titulo}
                     </h4>
+                    {hasLink && (
+                      <ExternalLink className={`h-3.5 w-3.5 ${alertCritical ? "text-red-400" : "text-amber-400"}`} />
+                    )}
                   </div>
                   <p className={`text-xs mt-0.5 ${alertCritical ? "text-red-600/80" : "text-amber-600/80"}`}>
                     {alert.mensagem}

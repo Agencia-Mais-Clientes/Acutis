@@ -8,6 +8,7 @@ export interface AnaliseProativa {
   titulo: string;
   mensagem: string;
   sugestao: string;
+  linkUrl?: string; // URL para redirecionar ao clicar no alerta
 }
 
 export async function analisarSaudeNegocio(ownerId: string): Promise<AnaliseProativa[]> {
@@ -25,7 +26,8 @@ export async function analisarSaudeNegocio(ownerId: string): Promise<AnaliseProa
       nivel: "critical",
       titulo: "Conversão Crítica",
       mensagem: `Gestor, a taxa de sucesso está em apenas ${kpis.taxaSucesso}%. De ${kpis.totalLeads} leads, poucos converteram.`,
-      sugestao: "Revise urgentemente os scripts de abordagem dos vendedores."
+      sugestao: "Revise urgentemente os scripts de abordagem dos vendedores.",
+      linkUrl: "/dashboard/analises?fase=convertido"
     });
   }
 
@@ -37,7 +39,8 @@ export async function analisarSaudeNegocio(ownerId: string): Promise<AnaliseProa
       nivel: "warning",
       titulo: "Leads Esquecidos",
       mensagem: `Você tem ${leadsVacuo} leads marcados como 'Perdidos ou em Vácuo'.`,
-      sugestao: "Aplique um 'dead lead script' ou mude o vendedor responsável por esses contatos."
+      sugestao: "Aplique um 'dead lead script' ou mude o vendedor responsável por esses contatos.",
+      linkUrl: "/dashboard/analises?fase=perdido"
     });
   }
 
@@ -48,7 +51,8 @@ export async function analisarSaudeNegocio(ownerId: string): Promise<AnaliseProa
       nivel: "warning",
       titulo: "Nota Média Insuficiente",
       mensagem: `A qualidade do atendimento caiu. A nota média atual é ${kpis.notaMedia}/100.`,
-      sugestao: "Ouça as gravações ou leia as transcrições para identificar falta de empatia ou técnica."
+      sugestao: "Ouça as gravações ou leia as transcrições para identificar falta de empatia ou técnica.",
+      linkUrl: "/dashboard/analises"
     });
   }
 
@@ -60,7 +64,8 @@ export async function analisarSaudeNegocio(ownerId: string): Promise<AnaliseProa
       nivel: "info",
       titulo: "Objeção de Preço Elevada",
       mensagem: `${objPreco.percentual}% das suas objeções hoje são sobre Preço.`,
-      sugestao: "Talvez seja a hora de treinar a equipe em 'Ancoragem de Valor' antes de falar o preço."
+      sugestao: "Talvez seja a hora de treinar a equipe em 'Ancoragem de Valor' antes de falar o preço.",
+      linkUrl: "/dashboard/analises?objecao=preco"
     });
   }
 
