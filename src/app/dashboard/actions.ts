@@ -2,7 +2,7 @@
 
 import { supabaseAdmin } from "@/lib/supabase";
 import { AnaliseConversa, KPIs, Gargalo, ObjecaoRanking, CategoriaObjecao, ObjecaoDetectada } from "@/lib/types";
-import { categorizarObjecaoLegado } from "@/lib/objecao-utils";
+import { categorizarObjecaoLegado, getCategoriaObjecao } from "@/lib/objecao-utils";
 
 // Busca todas as análises do owner com origem real do tracking
 export async function getAnalises(ownerId: string): Promise<AnaliseConversa[]> {
@@ -212,61 +212,63 @@ const CATEGORIA_ICONES: Record<CategoriaObjecao, string> = {
 
 // Ranking de objeções
 export async function getTopObjecoes(ownerId: string): Promise<ObjecaoRanking[]> {
-  const analises = await getAnalises(ownerId);
+  try {
+    const analises = await getAnalises(ownerId);
 
-  const leadsVendas = analises.filter(
-    (a) => a.resultado_ia?.tipo_conversacao === "Vendas"
-  );
+    const leadsVendas = analises.filter(
+      (a) => a.resultado_ia?.tipo_conversacao === "Vendas"
+    );
 
-  const contagem: Record<CategoriaObjecao, number> = {
-    preco: 0,
-    tempo: 0,
-    localizacao: 0,
-    saude: 0,
-    compromisso: 0,
-    consulta_terceiros: 0,
-    adiamento: 0,
-    fidelidade: 0,
-    concorrencia: 0,
-    interesse_baixo: 0,
-    outros: 0,
-  };
+    const contagem: Record<CategoriaObjecao, number> = {
+      preco: 0,
+      tempo: 0,
+      localizacao: 0,
+      saude: 0,
+      compromisso: 0,
+      consulta_terceiros: 0,
+      adiamento: 0,
+      fidelidade: 0,
+      concorrencia: 0,
+      interesse_baixo: 0,
+      outros: 0,
+    };
 
-  leadsVendas.forEach((a) => {
-    const objecoes = a.resultado_ia?.objecoes_detectadas || [];
-    
-    objecoes.forEach((obj) => {
-      if (!obj) return;
+    leadsVendas.forEach((a) => {
+      const objecoes = a.resultado_ia?.objecoes_detectadas || [];
       
-      // Verifica se é o novo formato (objeto) ou legado (string)
-      if (typeof obj === "object" && "categoria" in obj) {
-        // Novo formato: { categoria: "preco", evidencia: "..." }
-        const objecao = obj as ObjecaoDetectada;
-        if (objecao.categoria && contagem[objecao.categoria] !== undefined) {
-          contagem[objecao.categoria]++;
+      objecoes.forEach((obj) => {
+        if (!obj) return;
+        
+        // Usa função unificada para categorizar
+        const categoria = getCategoriaObjecao(obj);
+        
+        // Incrementa contagem de forma segura
+        if (contagem[categoria] !== undefined) {
+          contagem[categoria]++;
+        } else {
+          contagem.outros = (contagem.outros || 0) + 1;
         }
-      } else if (typeof obj === "string" && obj.trim()) {
-        // Formato legado: string
-        const categoria = categorizarObjecaoLegado(obj);
-        contagem[categoria]++;
-      }
+      });
     });
-  });
 
-  const total = Object.values(contagem).reduce((a, b) => a + b, 0);
+    const total = Object.values(contagem).reduce((a, b) => a + b, 0);
 
-  // Filtra apenas categorias com ocorrências e ordena
-  const ranking: ObjecaoRanking[] = (Object.entries(contagem) as [CategoriaObjecao, number][])
-    .filter(([, quantidade]) => quantidade > 0)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([categoria, quantidade]) => ({
-      nome: CATEGORIA_LABELS[categoria],
-      categoria,  // Chave da categoria para filtragem
-      quantidade,
-      percentual: total > 0 ? Math.round((quantidade / total) * 100) : 0,
-      icone: CATEGORIA_ICONES[categoria],
-    }));
+    // Filtra apenas categorias com ocorrências e ordena
+    const ranking: ObjecaoRanking[] = (Object.entries(contagem) as [CategoriaObjecao, number][])
+      .filter(([, quantidade]) => quantidade > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([categoria, quantidade]) => ({
+        nome: CATEGORIA_LABELS[categoria] || categoria,
+        categoria,  // Chave da categoria para filtragem
+        quantidade,
+        percentual: total > 0 ? Math.round((quantidade / total) * 100) : 0,
+        icone: CATEGORIA_ICONES[categoria] || "❓",
+      }));
 
-  return ranking;
+    return ranking;
+  } catch (error) {
+    console.error("Erro ao buscar top objeções:", error);
+    return [];
+  }
 }
