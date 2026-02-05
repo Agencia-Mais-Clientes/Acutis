@@ -60,7 +60,7 @@ export function FunilPersonalizado({ dados, titulo = "Funil de Conversão" }: Fu
       </div>
       
       {/* Funil Horizontal Compacto - Clicável */}
-      <div className="flex items-stretch gap-1 mb-3">
+      <div className="flex items-stretch gap-1 mb-3 overflow-x-auto pb-2 -mx-2 px-2 md:overflow-visible md:pb-0 md:px-0 scrollbar-hide">
         {dadosOrdenados.map((item, index) => {
           const isLast = index === dadosOrdenados.length - 1;
           const filterParam = getFilterParam(item.etapa.nome);
@@ -72,7 +72,7 @@ export function FunilPersonalizado({ dados, titulo = "Funil de Conversão" }: Fu
             <Link 
               key={item.etapa.id} 
               href={href}
-              className="flex-1 relative group cursor-pointer"
+              className="flex-1 relative group cursor-pointer min-w-[100px] md:min-w-0 flex-shrink-0"
               title={`Ver ${item.quantidade} leads em "${item.etapa.nome}"`}
             >
               {/* Barra com arrow shape */}
@@ -123,7 +123,7 @@ export function FunilPersonalizado({ dados, titulo = "Funil de Conversão" }: Fu
       </div>
 
       {/* Legenda compacta - Clicável */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-3 border-t border-gray-100 gap-3">
         <div className="flex items-center gap-3 flex-wrap">
           {dadosOrdenados.map((item) => {
             const filterParam = getFilterParam(item.etapa.nome);

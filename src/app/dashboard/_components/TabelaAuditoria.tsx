@@ -190,7 +190,7 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
             </div>
             
             {/* Filters Row */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide -mx-2 px-2 md:-mx-0 md:px-0">
               {/* Tipo */}
               <select
                 value={filtroTipo}
@@ -279,8 +279,8 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left bg-white">
+          <div className="overflow-x-auto min-w-full pb-2">
+            <table className="w-full text-left bg-white min-w-[800px]">
               <thead>
                 <tr className="border-b border-border bg-white text-muted-foreground text-[10px] uppercase tracking-wider font-semibold">
                   <th className="p-4 pl-6">Lead</th>

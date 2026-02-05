@@ -68,7 +68,7 @@ export function MonitorGargalos({ gargalos, totalLeads }: MonitorGargalosProps) 
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 pt-5 flex-1 overflow-y-auto max-h-[300px] scrollbar-thin scrollbar-thumb-gray-200">
+      <CardContent className="space-y-4 pt-5 flex-1 overflow-y-auto max-h-[250px] md:max-h-[300px] scrollbar-thin scrollbar-thumb-gray-200 px-3 md:px-6">
           {gargalos.map((gargalo) => {
             const percentual = totalLeads > 0 ? Math.round((gargalo.quantidade / totalLeads) * 100) : 0;
             const isRed = gargalo.cor === "red";

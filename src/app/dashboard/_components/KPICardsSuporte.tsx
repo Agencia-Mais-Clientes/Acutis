@@ -15,7 +15,7 @@ interface KPICardsSuporteProps {
 
 export function KPICardsSuporte({ kpis }: KPICardsSuporteProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
       {/* Total de Tickets - Blue Gradient */}
       <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-blue-600 to-cyan-600 text-white group hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">

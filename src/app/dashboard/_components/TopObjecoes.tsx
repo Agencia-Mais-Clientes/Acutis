@@ -51,7 +51,7 @@ export function TopObjecoes({ objecoes }: TopObjecoesProps) {
   ];
 
   return (
-    <Card className="shadow-lg border-none bg-white overflow-hidden flex flex-col h-full">
+    <Card className="shadow-lg border-none bg-white overflow-hidden flex flex-col">
       <CardHeader className="pb-4 bg-gradient-to-r from-rose-50 to-pink-50 border-b border-rose-100">
         <CardTitle className="text-sm font-bold tracking-tight flex items-center gap-2">
           <div className="p-1.5 bg-rose-100 rounded-lg">
