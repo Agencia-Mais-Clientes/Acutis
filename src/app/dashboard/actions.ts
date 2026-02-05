@@ -5,6 +5,7 @@ import { AnaliseConversa, KPIs, Gargalo, ObjecaoRanking, CategoriaObjecao, Objec
 import { categorizarObjecaoLegado, getCategoriaObjecao } from "@/lib/objecao-utils";
 import { parseDataBR, dentroDoPeriodo, getMesAtual, parsePeriodo } from "@/lib/date-utils";
 import { requireAuth } from "@/lib/auth-utils";
+import { matchFase, TIPO_CONVERSACAO} from "@/lib/constants";
 
 // ============================================
 // HELPERS INTERNOS
@@ -106,15 +107,10 @@ export async function getKPIs(ownerId: string, diasPeriodo: number = 7): Promise
     return dataEntrada >= dataLimite;
   });
 
-  const vendidos = leadsVendas.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("vendido") || fase.includes("matriculado");
-  });
+  const vendidos = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "VENDIDO"));
 
-  // Agendamentos no período (se tiver data_agendada, usa ela; senão usa created_at)
   const agendados = leadsVendas.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    if (!fase.includes("agendado")) return false;
+    if (!matchFase(a.resultado_ia?.funil_fase, "AGENDADO")) return false;
     
     // Tenta usar data real do agendamento se disponível
     const dataAgendadaStr = a.resultado_ia?.dados_agendamento?.data_agendada;
@@ -172,15 +168,9 @@ export async function getGargalos(
     (a) => a.resultado_ia?.tipo_conversacao === "Vendas"
   );
 
-  const emNegociacao = leadsVendas.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("negociação") || fase.includes("negociacao");
-  });
+  const emNegociacao = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "NEGOCIACAO"));
 
-  const perdidos = leadsVendas.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("perdido") || fase.includes("vácuo") || fase.includes("vacuo");
-  });
+  const perdidos = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "PERDIDO"));
 
   const gargalos: Gargalo[] = [];
 

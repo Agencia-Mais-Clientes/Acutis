@@ -12,7 +12,8 @@ import {
 } from "@/lib/types";
 import { getAnalises } from "./actions";
 import { getCategoriaObjecao } from "@/lib/objecao-utils";
-import { parseDataBR, dentroDoPeriodo, getMesAtual, parsePeriodo } from "@/lib/date-utils";
+import { parseDataBR, dentroDoPeriodo, getMesAtual } from "@/lib/date-utils";
+import { matchFase } from "@/lib/constants";
 
 // ============================================
 // KPIs SEGMENTADOS
@@ -31,49 +32,32 @@ export async function getKPIsDashboard(
   const dataFim = periodo?.fim ? new Date(periodo.fim) : periodoDefault.fim;
 
   // Separa por tipo de conversação
-  const todasVendas = analises.filter(
+  const leadsVendas = analises.filter(
     (a) => a.resultado_ia?.tipo_conversacao === "Vendas"
   );
-  const todasSuporte = analises.filter(
+  const leadsSuporte = analises.filter(
     (a) => a.resultado_ia?.tipo_conversacao === "Suporte"
   );
 
-  // ========== FILTRO POR PERÍODO (data_entrada_lead) ==========
-  // Filtra leads que ENTRARAM no período selecionado
-  const leadsVendas = todasVendas.filter((a) => {
-    const dataEntrada = parseDataBR(a.resultado_ia?.metrics?.data_entrada_lead);
-    return dentroDoPeriodo(dataEntrada, dataInicio, dataFim);
-  });
-
-  const leadsSuporte = todasSuporte.filter((a) => {
-    const dataEntrada = parseDataBR(a.resultado_ia?.metrics?.data_entrada_lead);
-    return dentroDoPeriodo(dataEntrada, dataInicio, dataFim);
-  });
-
   // ========== KPIs VENDAS ==========
-  // Total de leads que entraram no período
-  const leadsNovosVendas = leadsVendas.length;
+  // Filtra leads novos no período usando data_entrada_lead
+  const leadsNovosVendas = leadsVendas.filter((a) => {
+    const dataEntrada = parseDataBR(a.resultado_ia?.metrics?.data_entrada_lead);
+    return dentroDoPeriodo(dataEntrada, dataInicio, dataFim);
+  });
 
   // Classifica por fase do funil
-  const qualificados = leadsVendas.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("negociação") || fase.includes("negociacao");
-  });
+  const qualificados = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "NEGOCIACAO"));
 
   const agendadosVendas = leadsVendas.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("agendado");
+    if (!matchFase(a.resultado_ia?.funil_fase, "AGENDADO")) return false;
+    const dataAgendada = parseDataBR(a.resultado_ia?.dados_agendamento?.data_agendada);
+    return dentroDoPeriodo(dataAgendada, dataInicio, dataFim);
   });
 
-  const convertidos = leadsVendas.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("vendido") || fase.includes("matriculado") || fase.includes("convertido");
-  });
+  const convertidos = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "VENDIDO"));
 
-  const perdidos = leadsVendas.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("perdido") || fase.includes("vácuo") || fase.includes("vacuo");
-  });
+  const perdidos = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "PERDIDO"));
 
   // Nota média de vendas
   const notasVendas = leadsVendas
@@ -84,8 +68,8 @@ export async function getKPIsDashboard(
     : 0;
 
   const kpisVendas: KPIsVendas = {
-    totalLeads: leadsVendas.length,  // Total que entrou no período
-    leadsNovos: leadsNovosVendas,    // Mesmo valor (todos entraram no período)
+    totalLeads: leadsVendas.length,
+    leadsNovos: leadsNovosVendas.length,
     totalQualificado: qualificados.length,
     totalAgendado: agendadosVendas.length,
     totalConvertido: convertidos.length,
@@ -97,20 +81,11 @@ export async function getKPIsDashboard(
   };
 
   // ========== KPIs SUPORTE ==========
-  const ticketsAbertos = leadsSuporte.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return !fase.includes("resolvido");
-  });
+  const ticketsAbertos = leadsSuporte.filter((a) => !matchFase(a.resultado_ia?.funil_fase, "RESOLVIDO"));
 
-  const ticketsEmAndamento = leadsSuporte.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("atendimento") || fase.includes("andamento");
-  });
+  const ticketsEmAndamento = leadsSuporte.filter((a) => matchFase(a.resultado_ia?.funil_fase, "EM_ATENDIMENTO"));
 
-  const ticketsResolvidos = leadsSuporte.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("resolvido");
-  });
+  const ticketsResolvidos = leadsSuporte.filter((a) => matchFase(a.resultado_ia?.funil_fase, "RESOLVIDO"));
 
   // Nota média de suporte
   const notasSuporte = leadsSuporte
@@ -219,15 +194,11 @@ export async function getDadosFunil(
   const dataInicio = periodo?.inicio ? new Date(periodo.inicio) : periodoDefault.inicio;
   const dataFim = periodo?.fim ? new Date(periodo.fim) : periodoDefault.fim;
 
-  // Filtra por tipo de conversação E por período (data_entrada_lead)
+  // Filtra por tipo de conversação
   const analisesFiltradas = analises.filter((a) => {
     const tipoConversa = a.resultado_ia?.tipo_conversacao;
-    const tipoOk = pilar === "vendas" ? tipoConversa === "Vendas" : tipoConversa === "Suporte";
-    if (!tipoOk) return false;
-
-    // Filtra por data de entrada do lead
-    const dataEntrada = parseDataBR(a.resultado_ia?.metrics?.data_entrada_lead);
-    return dentroDoPeriodo(dataEntrada, dataInicio, dataFim);
+    if (pilar === "vendas") return tipoConversa === "Vendas";
+    return tipoConversa === "Suporte";
   });
 
   const total = analisesFiltradas.length;
