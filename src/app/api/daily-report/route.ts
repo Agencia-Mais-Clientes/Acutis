@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import type { AnaliseConversa } from "@/lib/types";
 import { getCategoriaObjecao } from "@/lib/objecao-utils";
 import { validateSession } from "@/lib/auth-utils";
+import { matchFase, CATEGORIA_OBJECAO_LABELS } from "@/lib/constants";
 
 export const maxDuration = 30;
 
@@ -84,20 +85,10 @@ export async function GET(req: NextRequest) {
       (a) => a.resultado_ia?.tipo_conversacao === "Suporte"
     );
 
-    const vendidos = vendas.filter((a) => {
-      const f = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      return f.includes("vendido") || f.includes("matriculado");
-    });
-    const agendados = vendas.filter((a) =>
-      a.resultado_ia?.funil_fase?.toLowerCase().includes("agendado")
-    );
-    const emNegociacao = vendas.filter((a) => {
-      const f = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      return f.includes("negociação") || f.includes("negociacao");
-    });
-    const perdidos = vendas.filter((a) =>
-      a.resultado_ia?.funil_fase?.toLowerCase().includes("perdido")
-    );
+    const vendidos = vendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "VENDIDO"));
+    const agendados = vendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "AGENDADO"));
+    const emNegociacao = vendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "NEGOCIACAO"));
+    const perdidos = vendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "PERDIDO"));
 
     // Nota média
     const notas = listaAnalises
@@ -122,16 +113,10 @@ export async function GET(req: NextRequest) {
         }
       });
     });
-    const LABELS: Record<string, string> = {
-      preco: "Preço", tempo: "Horário", localizacao: "Localização",
-      saude: "Saúde", compromisso: "Compromisso", consulta_terceiros: "Consulta Terceiros",
-      adiamento: "Adiamento", fidelidade: "Contrato", concorrencia: "Concorrência",
-      interesse_baixo: "Interesse Baixo",
-    };
     const topObjecoes = Object.entries(objecoesMap)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
-      .map(([cat, quantidade]) => ({ nome: LABELS[cat] || cat, quantidade }));
+      .map(([cat, quantidade]) => ({ nome: CATEGORIA_OBJECAO_LABELS[cat as keyof typeof CATEGORIA_OBJECAO_LABELS] || cat, quantidade }));
 
     // Destaque positivo (melhor nota)
     const melhorNota = listaAnalises.reduce(

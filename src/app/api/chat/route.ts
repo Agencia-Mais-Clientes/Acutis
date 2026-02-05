@@ -2,6 +2,7 @@ import { google } from "@ai-sdk/google";
 import { streamText } from "ai";
 import { supabaseAdmin } from "@/lib/supabase";
 import { validateSession } from "@/lib/auth-utils";
+import { matchFase } from "@/lib/constants";
 
 export const maxDuration = 30;
 
@@ -36,23 +37,13 @@ export async function POST(req: Request) {
     const leadsSuporte =
       analises?.filter((a) => a.resultado_ia?.tipo_conversacao === "Suporte") || [];
 
-    const vendidos = leadsVendas.filter((a) => {
-      const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      return fase.includes("vendido") || fase.includes("matriculado");
-    });
+    const vendidos = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "VENDIDO"));
 
-    const agendados = leadsVendas.filter((a) =>
-      a.resultado_ia?.funil_fase?.toLowerCase().includes("agendado")
-    );
+    const agendados = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "AGENDADO"));
 
-    const perdidos = leadsVendas.filter((a) =>
-      a.resultado_ia?.funil_fase?.toLowerCase().includes("perdido")
-    );
+    const perdidos = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "PERDIDO"));
 
-    const emNegociacao = leadsVendas.filter((a) => {
-      const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      return fase.includes("negociação") || fase.includes("negociacao");
-    });
+    const emNegociacao = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "NEGOCIACAO"));
 
     // Conta objeções
     const objecoes: Record<string, number> = {};
