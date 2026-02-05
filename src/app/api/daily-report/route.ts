@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { AnaliseConversa } from "@/lib/types";
 import { getCategoriaObjecao } from "@/lib/objecao-utils";
+import { validateSession } from "@/lib/auth-utils";
 
 export const maxDuration = 30;
 
@@ -38,6 +39,19 @@ export async function GET(req: NextRequest) {
 
     if (!ownerId) {
       return NextResponse.json({ error: "ownerId obrigatório" }, { status: 400 });
+    }
+
+    // SEGURANÇA: Valida sessão ou aceita token API (para N8N/cron)
+    const authHeader = req.headers.get("authorization");
+    const expectedToken = process.env.ANALYZE_API_TOKEN;
+    const hasApiToken = expectedToken && authHeader === `Bearer ${expectedToken}`;
+
+    if (!hasApiToken) {
+      // Se não tem token API, valida sessão do usuário
+      const session = await validateSession(ownerId);
+      if (!session.isValid) {
+        return NextResponse.json({ error: session.error || "Acesso negado" }, { status: 403 });
+      }
     }
 
     // Busca config da empresa

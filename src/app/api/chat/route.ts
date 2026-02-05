@@ -1,6 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { streamText } from "ai";
 import { supabaseAdmin } from "@/lib/supabase";
+import { validateSession } from "@/lib/auth-utils";
 
 export const maxDuration = 30;
 
@@ -12,11 +13,19 @@ export async function POST(req: Request) {
       return new Response("Owner ID não informado", { status: 401 });
     }
 
+    // SEGURANÇA: Valida se o usuário tem permissão para acessar este ownerId
+    const session = await validateSession(ownerId);
+    if (!session.isValid) {
+      return new Response(session.error || "Acesso negado", { status: 403 });
+    }
+
+    const authorizedOwnerId = session.ownerId!;
+
     // Busca dados do owner para contexto
     const { data: analises } = await supabaseAdmin
       .from("analises_conversas")
       .select("*")
-      .eq("owner", ownerId)
+      .eq("owner", authorizedOwnerId)
       .order("created_at", { ascending: false })
       .limit(50);
 

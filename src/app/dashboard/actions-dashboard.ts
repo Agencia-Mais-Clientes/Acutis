@@ -12,38 +12,7 @@ import {
 } from "@/lib/types";
 import { getAnalises } from "./actions";
 import { getCategoriaObjecao } from "@/lib/objecao-utils";
-
-// ============================================
-// HELPERS DE DATA
-// ============================================
-
-/** Parse data no formato "DD/MM/YYYY" ou "DD/MM/YYYY, HH:mm" */
-function parseDataBR(dataStr: string | null | undefined): Date | null {
-  if (!dataStr) return null;
-  const match = dataStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-  if (!match) return null;
-  return new Date(
-    parseInt(match[3]),
-    parseInt(match[2]) - 1,
-    parseInt(match[1])
-  );
-}
-
-/** Verifica se uma data está dentro do período */
-function dentroDoPeriodo(data: Date | null, inicio: Date, fim: Date): boolean {
-  if (!data) return false;
-  return data >= inicio && data <= fim;
-}
-
-/** Retorna período do mês atual */
-function getMesAtual(): { inicio: Date; fim: Date } {
-  const hoje = new Date();
-  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  inicio.setHours(0, 0, 0, 0);
-  const fim = new Date();
-  fim.setHours(23, 59, 59, 999);
-  return { inicio, fim };
-}
+import { parseDataBR, dentroDoPeriodo, getMesAtual, parsePeriodo } from "@/lib/date-utils";
 
 // ============================================
 // KPIs SEGMENTADOS

@@ -3,47 +3,19 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { AnaliseConversa, KPIs, Gargalo, ObjecaoRanking, CategoriaObjecao, ObjecaoDetectada } from "@/lib/types";
 import { categorizarObjecaoLegado, getCategoriaObjecao } from "@/lib/objecao-utils";
+import { parseDataBR, dentroDoPeriodo, getMesAtual, parsePeriodo } from "@/lib/date-utils";
+import { requireAuth } from "@/lib/auth-utils";
 
 // ============================================
-// HELPERS DE DATA
+// HELPERS INTERNOS
 // ============================================
-
-/** Parse data no formato "DD/MM/YYYY" ou "DD/MM/YYYY, HH:mm" */
-function parseDataBR(dataStr: string | null | undefined): Date | null {
-  if (!dataStr) return null;
-  const match = dataStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-  if (!match) return null;
-  return new Date(
-    parseInt(match[3]),
-    parseInt(match[2]) - 1,
-    parseInt(match[1])
-  );
-}
-
-/** Verifica se uma data está dentro do período */
-function dentroDoPeriodo(data: Date | null, inicio: Date, fim: Date): boolean {
-  if (!data) return false;
-  return data >= inicio && data <= fim;
-}
-
-/** Retorna período do mês atual */
-function getMesAtual(): { inicio: Date; fim: Date } {
-  const hoje = new Date();
-  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  inicio.setHours(0, 0, 0, 0);
-  const fim = new Date();
-  fim.setHours(23, 59, 59, 999);
-  return { inicio, fim };
-}
 
 /** Filtra análises por data_entrada_lead dentro do período */
 function filtrarPorPeriodo(
   analises: AnaliseConversa[],
   periodo?: { inicio: string; fim: string }
 ): AnaliseConversa[] {
-  const periodoDefault = getMesAtual();
-  const dataInicio = periodo?.inicio ? new Date(periodo.inicio) : periodoDefault.inicio;
-  const dataFim = periodo?.fim ? new Date(periodo.fim) : periodoDefault.fim;
+  const { inicio: dataInicio, fim: dataFim } = parsePeriodo(periodo);
 
   return analises.filter((a) => {
     const dataEntrada = parseDataBR(a.resultado_ia?.metrics?.data_entrada_lead);
@@ -52,12 +24,16 @@ function filtrarPorPeriodo(
 }
 
 // Busca todas as análises do owner com origem real do tracking
+// SEGURANÇA: Valida sessão antes de buscar dados
 export async function getAnalises(ownerId: string): Promise<AnaliseConversa[]> {
+  // Valida que o usuário tem permissão para acessar este ownerId
+  const authorizedOwnerId = await requireAuth(ownerId);
+  
   // Busca análises
   const { data: analises, error: analisesError } = await supabaseAdmin
     .from("analises_conversas")
     .select("*")
-    .eq("owner", ownerId)
+    .eq("owner", authorizedOwnerId)
     .order("created_at", { ascending: false });
 
   if (analisesError) {
