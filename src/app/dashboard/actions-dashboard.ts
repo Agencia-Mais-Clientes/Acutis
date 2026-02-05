@@ -205,25 +205,13 @@ export async function getDadosFunil(
 
   if (pilar === "vendas") {
     // Conta cada etapa do funil de vendas
-    const qualificados = analisesFiltradas.filter((a) => {
-      const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      return fase.includes("negociação") || fase.includes("negociacao");
-    }).length;
+    const qualificados = analisesFiltradas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "NEGOCIACAO")).length;
 
-    const agendados = analisesFiltradas.filter((a) => {
-      const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      return fase.includes("agendado");
-    }).length;
+    const agendados = analisesFiltradas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "AGENDADO")).length;
 
-    const convertidos = analisesFiltradas.filter((a) => {
-      const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      return fase.includes("vendido") || fase.includes("matriculado") || fase.includes("convertido");
-    }).length;
+    const convertidos = analisesFiltradas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "VENDIDO")).length;
 
-    const perdidos = analisesFiltradas.filter((a) => {
-      const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      return fase.includes("perdido") || fase.includes("vácuo") || fase.includes("vacuo");
-    }).length;
+    const perdidos = analisesFiltradas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "PERDIDO")).length;
 
     // Mapeia para as etapas configuradas
     const contagemPorEtapa: Record<string, number> = {
@@ -241,15 +229,9 @@ export async function getDadosFunil(
     }));
   } else {
     // Funil de suporte
-    const emAtendimento = analisesFiltradas.filter((a) => {
-      const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      return fase.includes("atendimento") || fase.includes("andamento");
-    }).length;
+    const emAtendimento = analisesFiltradas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "EM_ATENDIMENTO")).length;
 
-    const resolvidos = analisesFiltradas.filter((a) => {
-      const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      return fase.includes("resolvido");
-    }).length;
+    const resolvidos = analisesFiltradas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "RESOLVIDO")).length;
 
     const contagemPorEtapa: Record<string, number> = {
       "Ticket Aberto": total, // Todos os tickets passam pela primeira etapa
@@ -322,8 +304,7 @@ export async function getInsightsAgencia(ownerId: string): Promise<InsightAgenci
     }
     canais[origem].total++;
     
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    if (fase.includes("vendido") || fase.includes("matriculado")) {
+    if (matchFase(a.resultado_ia?.funil_fase, "VENDIDO")) {
       canais[origem].convertidos++;
     }
   });
@@ -353,10 +334,7 @@ export async function getInsightsAgencia(ownerId: string): Promise<InsightAgenci
   }
 
   // 3. INSIGHT: Leads perdidos
-  const perdidos = leadsVendas.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("perdido") || fase.includes("vácuo");
-  });
+  const perdidos = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "PERDIDO"));
 
   if (perdidos.length > 0) {
     const taxaPerdidos = Math.round((perdidos.length / leadsVendas.length) * 100);
@@ -377,10 +355,7 @@ export async function getInsightsAgencia(ownerId: string): Promise<InsightAgenci
   }
 
   // 4. INSIGHT: Agendamentos
-  const agendados = leadsVendas.filter((a) => {
-    const fase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-    return fase.includes("agendado");
-  });
+  const agendados = leadsVendas.filter((a) => matchFase(a.resultado_ia?.funil_fase, "AGENDADO"));
 
   if (agendados.length > 0) {
     const taxaAgendamento = Math.round((agendados.length / leadsVendas.length) * 100);
