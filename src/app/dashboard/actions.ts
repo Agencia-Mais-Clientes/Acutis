@@ -4,6 +4,53 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { AnaliseConversa, KPIs, Gargalo, ObjecaoRanking, CategoriaObjecao, ObjecaoDetectada } from "@/lib/types";
 import { categorizarObjecaoLegado, getCategoriaObjecao } from "@/lib/objecao-utils";
 
+// ============================================
+// HELPERS DE DATA
+// ============================================
+
+/** Parse data no formato "DD/MM/YYYY" ou "DD/MM/YYYY, HH:mm" */
+function parseDataBR(dataStr: string | null | undefined): Date | null {
+  if (!dataStr) return null;
+  const match = dataStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!match) return null;
+  return new Date(
+    parseInt(match[3]),
+    parseInt(match[2]) - 1,
+    parseInt(match[1])
+  );
+}
+
+/** Verifica se uma data está dentro do período */
+function dentroDoPeriodo(data: Date | null, inicio: Date, fim: Date): boolean {
+  if (!data) return false;
+  return data >= inicio && data <= fim;
+}
+
+/** Retorna período do mês atual */
+function getMesAtual(): { inicio: Date; fim: Date } {
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  inicio.setHours(0, 0, 0, 0);
+  const fim = new Date();
+  fim.setHours(23, 59, 59, 999);
+  return { inicio, fim };
+}
+
+/** Filtra análises por data_entrada_lead dentro do período */
+function filtrarPorPeriodo(
+  analises: AnaliseConversa[],
+  periodo?: { inicio: string; fim: string }
+): AnaliseConversa[] {
+  const periodoDefault = getMesAtual();
+  const dataInicio = periodo?.inicio ? new Date(periodo.inicio) : periodoDefault.inicio;
+  const dataFim = periodo?.fim ? new Date(periodo.fim) : periodoDefault.fim;
+
+  return analises.filter((a) => {
+    const dataEntrada = parseDataBR(a.resultado_ia?.metrics?.data_entrada_lead);
+    return dentroDoPeriodo(dataEntrada, dataInicio, dataFim);
+  });
+}
+
 // Busca todas as análises do owner com origem real do tracking
 export async function getAnalises(ownerId: string): Promise<AnaliseConversa[]> {
   // Busca análises
@@ -137,9 +184,13 @@ export async function getKPIs(ownerId: string, diasPeriodo: number = 7): Promise
   };
 }
 
-// Identifica gargalos
-export async function getGargalos(ownerId: string): Promise<Gargalo[]> {
-  const analises = await getAnalises(ownerId);
+// Identifica gargalos (filtrado por período)
+export async function getGargalos(
+  ownerId: string,
+  periodo?: { inicio: string; fim: string }
+): Promise<Gargalo[]> {
+  const todasAnalises = await getAnalises(ownerId);
+  const analises = filtrarPorPeriodo(todasAnalises, periodo);
 
   const leadsVendas = analises.filter(
     (a) => a.resultado_ia?.tipo_conversacao === "Vendas"
@@ -210,10 +261,14 @@ const CATEGORIA_ICONES: Record<CategoriaObjecao, string> = {
 
 // Função de categorização importada de @/lib/objecao-utils
 
-// Ranking de objeções
-export async function getTopObjecoes(ownerId: string): Promise<ObjecaoRanking[]> {
+// Ranking de objeções (filtrado por período)
+export async function getTopObjecoes(
+  ownerId: string,
+  periodo?: { inicio: string; fim: string }
+): Promise<ObjecaoRanking[]> {
   try {
-    const analises = await getAnalises(ownerId);
+    const todasAnalises = await getAnalises(ownerId);
+    const analises = filtrarPorPeriodo(todasAnalises, periodo);
 
     const leadsVendas = analises.filter(
       (a) => a.resultado_ia?.tipo_conversacao === "Vendas"

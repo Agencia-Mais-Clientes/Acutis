@@ -62,8 +62,8 @@ export function DashboardContent({
         getKPIsDashboard(ownerId, periodo),
         getDadosFunil(ownerId, "vendas", periodo),
         getDadosFunil(ownerId, "suporte", periodo),
-        getGargalos(ownerId),
-        getTopObjecoes(ownerId),
+        getGargalos(ownerId, periodo),
+        getTopObjecoes(ownerId, periodo),
       ]);
 
       setKpis(newKpis);
