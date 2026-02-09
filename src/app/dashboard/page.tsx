@@ -80,7 +80,7 @@ export default async function DashboardPage() {
     <div className="p-4 md:p-8 space-y-6">
        {/* Premium Header with Gradient */}
        <FadeIn duration={0.6}>
-         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 p-6 md:p-8 shadow-xl">
+         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-blue-700 p-6 md:p-8 shadow-xl">
            {/* Background decoration */}
            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
            
