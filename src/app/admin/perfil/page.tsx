@@ -30,26 +30,16 @@ export default async function ProfilePage() {
         <div className="container mx-auto px-6 h-16 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Image
-              src="/logos/simbolo-mais-clientes.png"
-              alt="Mais Clientes"
-              width={36}
-              height={36}
-              className="rounded-lg"
+              src="/logos/logo_acutis_black.png"
+              alt="Acutis"
+              width={160}
+              height={45}
+              className="h-10 w-auto"
             />
             <div className="h-8 w-px bg-gray-200" />
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
-                <Activity className="h-5 w-5 text-white" strokeWidth={2.5} />
-              </div>
-              <div>
-                <h1 className="text-sm font-black text-gray-900 tracking-tight uppercase">
-                  Acutis
-                </h1>
-                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
-                  Meu Perfil
-                </span>
-              </div>
-            </div>
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-widest">
+              Meu Perfil
+            </span>
           </div>
 
           <div className="flex items-center gap-3">

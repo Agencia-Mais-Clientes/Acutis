@@ -42,11 +42,11 @@ export default function AdminLoginPage() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]" />
       </div>
 
-      {/* Logo Mais Clientes no topo */}
+      {/* Logo Acutis no topo */}
       <div className="relative z-10 mb-8 animate-fade-in">
         <Image
-          src="/logos/logo-mais-clientes.png"
-          alt="Mais Clientes"
+          src="/logos/logo_acutis_White.png"
+          alt="Acutis"
           width={200}
           height={60}
           className="drop-shadow-2xl"
@@ -57,21 +57,6 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Card de Login com glassmorphism */}
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
-          {/* Acutis Badge */}
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30 ring-2 ring-white/20">
-              <Activity className="h-6 w-6 text-white" strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-white tracking-tight uppercase">
-                Acutis
-              </h1>
-              <p className="text-[10px] text-white/60 font-medium uppercase tracking-widest">
-                Painel Administrativo
-              </p>
-            </div>
-          </div>
-
           {/* Título */}
           <div className="flex items-center justify-center gap-2 mb-6">
             <Shield className="h-4 w-4 text-violet-400" />
@@ -139,23 +124,7 @@ export default function AdminLoginPage() {
           </form>
         </div>
 
-        {/* Footer - Powered by Mais Clientes */}
-        <div className="flex items-center justify-center gap-2 mt-8 opacity-60 hover:opacity-100 transition-opacity">
-          <Sparkles className="h-3 w-3 text-violet-400" />
-          <span className="text-xs text-white/60 font-medium">
-            Powered by
-          </span>
-          <Image
-            src="/logos/simbolo-mais-clientes.png"
-            alt="Mais Clientes"
-            width={20}
-            height={20}
-            className="opacity-80"
-          />
-          <span className="text-xs font-bold bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
-            Mais Clientes
-          </span>
-        </div>
+
       </div>
     </div>
   );

@@ -7,7 +7,6 @@ import { useState, createContext, useContext } from "react";
 import {
   LayoutDashboard,
   Settings,
-  Activity,
   BarChart3,
   ChevronLeft,
   ChevronRight,
@@ -16,6 +15,7 @@ import {
   Sparkles,
   Shield,
 } from "lucide-react";
+import Image from "next/image";
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -126,18 +126,21 @@ export function AppSidebar() {
           collapsed ? "w-20" : "w-72"
         )}
       >
-        {/* Header */}
         <div className="px-4 py-4 border-b border-sidebar-border/50 flex items-center justify-between shrink-0">
           <Link href="/dashboard" className="flex items-center gap-3 cursor-pointer group">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#8537E7] to-[#278BCD] rounded-xl flex items-center justify-center shadow-lg shadow-purple-900/20 group-hover:scale-105 transition-transform duration-300 shrink-0">
-              <Activity className="h-5 w-5 text-white" />
-            </div>
+            <Image
+              src="/logos/logo_acutis_black.png"
+              alt="Acutis"
+              width={collapsed ? 40 : 120}
+              height={35}
+              className={cn(
+                "transition-all duration-300",
+                collapsed ? "h-8 w-auto" : "h-9 w-auto"
+              )}
+            />
             {!collapsed && (
               <div className="overflow-hidden">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tight">
-                  Acutis
-                </h1>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold ml-0.5">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
                   Painel de Gestão
                 </p>
               </div>
