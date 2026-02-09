@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useTransition } from "react";
 import { DashboardTabs } from "./DashboardTabs";
-import { DateRangePicker } from "./DateRangePicker";
+import { AdvancedDateRangePicker } from "./AdvancedDateRangePicker";
 import { KPICardsVendas } from "./KPICardsVendas";
 import { KPICardsSuporte } from "./KPICardsSuporte";
 import { FunilPersonalizado } from "./FunilPersonalizado";
@@ -15,6 +15,7 @@ import {
   Gargalo,
   ObjecaoRanking 
 } from "@/lib/types";
+import { type DateRange } from "@/lib/date-utils";
 import { getKPIsDashboard, getDadosFunil } from "../actions-dashboard";
 import { getGargalos, getTopObjecoes } from "../actions";
 import { Loader2 } from "lucide-react";
@@ -40,7 +41,9 @@ export function DashboardContent({
   initialObjecoes,
 }: DashboardContentProps) {
   const [activeTab, setActiveTab] = useState<Tab>("vendas");
-  const [dateRange, setDateRange] = useState<{ inicio: Date; fim: Date } | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [comparisonRange, setComparisonRange] = useState<DateRange | undefined>();
+  const [compareEnabled, setCompareEnabled] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // Estados dos dados
@@ -51,11 +54,11 @@ export function DashboardContent({
   const [objecoes, setObjecoes] = useState<ObjecaoRanking[]>(initialObjecoes);
 
   // Recarrega dados quando muda o período
-  const reloadData = useCallback(async (range: { inicio: Date; fim: Date }) => {
+  const reloadData = useCallback(async (range: DateRange) => {
     startTransition(async () => {
       const periodo = {
-        inicio: range.inicio.toISOString(),
-        fim: range.fim.toISOString(),
+        inicio: range.from.toISOString(),
+        fim: range.to.toISOString(),
       };
 
       const [newKpis, newFunilVendas, newFunilSuporte, newGargalos, newObjecoes] = await Promise.all([
@@ -75,10 +78,16 @@ export function DashboardContent({
   }, [ownerId]);
 
   // Handler de mudança de data
-  const handleDateChange = useCallback((range: { inicio: Date; fim: Date }) => {
+  const handleDateChange = useCallback((range: DateRange, comparison?: DateRange) => {
     setDateRange(range);
+    setComparisonRange(comparison);
     reloadData(range);
   }, [reloadData]);
+
+  // Handler de mudança de comparação
+  const handleCompareChange = useCallback((enabled: boolean) => {
+    setCompareEnabled(enabled);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -93,12 +102,14 @@ export function DashboardContent({
         
         <div className="flex items-center gap-3">
           {isPending && (
-            <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
+            <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
           )}
-          <DateRangePicker
+          <AdvancedDateRangePicker
             value={dateRange}
+            comparisonValue={comparisonRange}
+            compareEnabled={compareEnabled}
             onChange={handleDateChange}
-            className="bg-violet-600 border-violet-500 hover:bg-violet-700"
+            onCompareChange={handleCompareChange}
           />
         </div>
       </div>
