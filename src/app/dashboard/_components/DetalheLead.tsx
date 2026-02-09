@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AnaliseConversa } from "@/lib/types";
 import {
   Sheet,
@@ -8,7 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, User, Lightbulb, Zap, MessageSquare, AlertTriangle, Sparkles } from "lucide-react";
+import { CheckCircle, XCircle, Clock, User, Lightbulb, Zap, MessageSquare, AlertTriangle, Sparkles, Copy, Check } from "lucide-react";
 import { PilaresCard } from "./PilaresCard";
 
 interface DetalheLeadProps {
@@ -47,6 +48,7 @@ function getCategoriaLabel(categoria: string): string {
 }
 
 export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
+  const [copied, setCopied] = useState(false);
   const resultado = analise.resultado_ia;
   const nome = resultado?.dados_cadastrais?.nome_lead || "Não identificado";
   const vendedor = resultado?.dados_cadastrais?.nome_vendedor || "Atendente";
@@ -55,11 +57,24 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
   const origem = origemTracking ? mapOrigemTracking(origemTracking) : (resultado?.dados_cadastrais?.origem_detectada || "Orgânico");
   const resumo = resultado?.resumo_executivo || "Sem resumo disponível";
   const proximoPasso = resultado?.proximo_passo_sugerido || "Acompanhar o lead";
+  const mensagemSugerida = resultado?.mensagem_sugerida;
   const objecoes = resultado?.objecoes_detectadas || [];
   const pontosFortes = resultado?.performance_vendas?.pontos_fortes || [];
   const pontosMelhoria = resultado?.performance_vendas?.pontos_melhoria || [];
   const metrics = resultado?.metrics;
   const detalhesConversao = resultado?.detalhes_conversao;
+
+  // Função para copiar mensagem
+  const handleCopyMessage = async () => {
+    if (!mensagemSugerida) return;
+    try {
+      await navigator.clipboard.writeText(mensagemSugerida);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Erro ao copiar:", err);
+    }
+  };
 
   // Origin badge colors
   const getOrigemStyle = (o: string) => {
@@ -212,12 +227,47 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
           </div>
 
           {/* Próximo Passo - Action Card */}
-          <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl p-5 shadow-lg text-white">
-            <h3 className="text-[10px] font-bold text-violet-200 uppercase mb-2 flex items-center gap-1.5">
+          <div className="bg-gradient-to-r from-cyan-600 to-blue-600 rounded-xl p-5 shadow-lg text-white">
+            <h3 className="text-[10px] font-bold text-cyan-200 uppercase mb-2 flex items-center gap-1.5">
               <Lightbulb className="h-4 w-4 text-yellow-300" /> Ação Sugerida
             </h3>
             <p className="text-sm font-medium leading-relaxed">{proximoPasso}</p>
           </div>
+
+          {/* Mensagem Sugerida - NOVO */}
+          {mensagemSugerida && (
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-5 shadow-lg text-white">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[10px] font-bold text-emerald-200 uppercase flex items-center gap-1.5">
+                  <MessageSquare className="h-4 w-4" /> Mensagem Pronta
+                </h3>
+                <button
+                  onClick={handleCopyMessage}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    copied 
+                      ? "bg-white/30 text-white" 
+                      : "bg-white/20 hover:bg-white/30 text-white"
+                  }`}
+                  disabled={copied}
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      Copiar
+                    </>
+                  )}
+                </button>
+              </div>
+              <p className="text-sm font-medium leading-relaxed bg-white/10 rounded-lg p-3 border border-white/20">
+                {mensagemSugerida}
+              </p>
+            </div>
+          )}
 
           {/* Detalhes da Conversão */}
           {detalhesConversao && (

@@ -88,6 +88,7 @@ export interface ResultadoIA {
   nota_atendimento_0_100: number;
   resumo_executivo: string;
   proximo_passo_sugerido: string;
+  mensagem_sugerida?: string; // Mensagem pronta para o vendedor copiar e enviar
   conversao_realizada: boolean;
   detalhes_conversao: string | null;
   objecoes_detectadas: string[] | ObjecaoDetectada[]; // Suporta formato legado (string[]) e novo (ObjecaoDetectada[])

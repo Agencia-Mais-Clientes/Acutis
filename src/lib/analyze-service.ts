@@ -623,6 +623,25 @@ Liste os erros graves cometidos:
 - O que foi o fator decisivo para o resultado?
 
 # ═══════════════════════════════════════════════════════════
+# MENSAGEM SUGERIDA (NOVO - CRÍTICO)
+# ═══════════════════════════════════════════════════════════
+
+Crie uma MENSAGEM PRONTA para o vendedor copiar e enviar no WhatsApp.
+
+**Regras:**
+- Use o NOME do lead se disponível (ex: "Olá Maria!")
+- Seja DIRETO e OBJETIVO (máximo 2-3 frases)
+- Inclua CTA claro (próximo passo concreto)
+- Tom amigável e profissional
+- NÃO use emojis em excesso (máximo 1-2)
+
+**Exemplos por situação:**
+- Se "Em Negociação": "Olá [Nome]! Vi que você estava interessado(a) no [plano/serviço]. Posso te ajudar com alguma dúvida? 😊"
+- Se "Perdido" por preço: "Oi [Nome]! Tenho uma condição especial que pode caber no seu orçamento. Posso te explicar?"
+- Se vácuo longo: "Olá [Nome]! Tudo bem? Ainda está pensando em [objetivo]? Estou à disposição!"
+- Se "Agendado": "Olá [Nome]! Só confirmando nosso [tipo] para [data]. Está tudo certo? 👍"
+
+# ═══════════════════════════════════════════════════════════
 # REGRAS ESPECIAIS
 # ═══════════════════════════════════════════════════════════
 
@@ -662,6 +681,7 @@ Responda APENAS com JSON válido, sem formatação markdown:
     }
   ],
   "proximo_passo_sugerido": "string",
+  "mensagem_sugerida": "Mensagem pronta para o vendedor copiar e enviar no WhatsApp",
   "resumo_executivo": "string",
   "funil_fase": "Status conforme regra acima",
   "conversao_realizada": boolean,
