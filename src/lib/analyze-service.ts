@@ -137,7 +137,9 @@ export async function getActiveChatsWithoutAnalysisFallback(
   origemFilter: OrigemFilter = "todos",
   fromDate?: string
 ): Promise<ChatAtivo[]> {
-  // Se filtrar por origem, primeiro buscar chatids elegíveis no lead_tracking
+  // Para filtro de origem, usa DUAS fontes:
+  // 1. chatids do lead_tracking (match direto)
+  // 2. flag eh_primeiro_contato_ads na mensagens_clientes (resolve mismatch LID/telefone)
   let chatidsElegiveis: string[] | null = null;
   
   if (origemFilter !== "todos") {
@@ -158,20 +160,12 @@ export async function getActiveChatsWithoutAnalysisFallback(
     
     if (trackingError) {
       console.error("[ANALYZE] Erro ao buscar lead_tracking:", trackingError);
-      // Se a tabela não existir ainda, ignora o filtro
       if (!trackingError.message?.includes("does not exist")) {
         return [];
       }
     } else if (trackedChats) {
       chatidsElegiveis = trackedChats.map(c => c.chatid);
-      
-      // Se não há chats elegíveis, retorna vazio
-      if (chatidsElegiveis.length === 0) {
-        console.log(`[ANALYZE] Nenhum chat com origem '${origemFilter}' encontrado`);
-        return [];
-      }
-      
-      console.log(`[ANALYZE] ${chatidsElegiveis.length} chats com origem '${origemFilter}'`);
+      console.log(`[ANALYZE] ${chatidsElegiveis.length} chats no lead_tracking com origem '${origemFilter}'`);
     }
   }
 
@@ -179,20 +173,25 @@ export async function getActiveChatsWithoutAnalysisFallback(
   const dataInicio = fromDate ? new Date(`${fromDate}T00:00:00Z`) : new Date("2025-11-01T00:00:00Z");
   let query = supabaseAdmin
     .from("mensagens_clientes")
-    .select("owner, chatid")
+    .select("owner, chatid, eh_primeiro_contato_ads")
     .gte("recebido_em", dataInicio.toISOString())
     .not("chatid", "like", "%@g.us")
     .not("chatid", "is", null)
     .neq("chatid", "")
-    .limit(10000); // Aumenta limite para pegar todos os chats
+    .limit(10000);
 
   if (ownerId) {
     query = query.eq("owner", ownerId);
   }
   
-  // Aplica filtro de chatids elegíveis se existir
-  if (chatidsElegiveis !== null) {
-    query = query.in("chatid", chatidsElegiveis);
+  // Aplica filtro de origem usando eh_primeiro_contato_ads como fonte primária
+  // Resolve o mismatch LID (Facebook) vs telefone real entre lead_tracking e mensagens_clientes
+  if (origemFilter === "trafego_pago") {
+    query = query.eq("eh_primeiro_contato_ads", true);
+    console.log(`[ANALYZE] Filtro tráfego pago: eh_primeiro_contato_ads = true`);
+  } else if (origemFilter === "organico") {
+    query = query.or("eh_primeiro_contato_ads.eq.false,eh_primeiro_contato_ads.is.null");
+    console.log(`[ANALYZE] Filtro orgânico: eh_primeiro_contato_ads != true`);
   }
 
   const { data: mensagens, error } = await query;
@@ -339,6 +338,7 @@ export async function getLeadEntryDate(chatId: string): Promise<string | null> {
  * Retorna a origem se existir, ou null se não tiver tracking
  */
 export async function getLeadOrigin(chatId: string, owner: string): Promise<string | null> {
+  // 1. Tenta match direto no lead_tracking
   const { data, error } = await supabaseAdmin
     .from("lead_tracking")
     .select("origem")
@@ -347,11 +347,26 @@ export async function getLeadOrigin(chatId: string, owner: string): Promise<stri
     .limit(1)
     .single();
 
-  if (error || !data) {
-    return null;
+  if (!error && data) {
+    return data.origem;
   }
 
-  return data.origem;
+  // 2. Fallback: verifica eh_primeiro_contato_ads em mensagens_clientes
+  // Resolve mismatch quando lead_tracking tem LID e mensagens tem telefone real
+  const { data: msgData } = await supabaseAdmin
+    .from("mensagens_clientes")
+    .select("eh_primeiro_contato_ads")
+    .eq("chatid", chatId)
+    .eq("owner", owner)
+    .eq("eh_primeiro_contato_ads", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (msgData?.eh_primeiro_contato_ads) {
+    return "facebook_ads"; // Default para ads quando detectado via flag
+  }
+
+  return null;
 }
 
 /**
