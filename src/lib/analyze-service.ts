@@ -134,7 +134,8 @@ export async function getActiveChatsWithoutAnalysis(
 export async function getActiveChatsWithoutAnalysisFallback(
   ownerId?: string,
   limit = 50,
-  origemFilter: OrigemFilter = "todos"
+  origemFilter: OrigemFilter = "todos",
+  fromDate?: string
 ): Promise<ChatAtivo[]> {
   // Se filtrar por origem, primeiro buscar chatids elegíveis no lead_tracking
   let chatidsElegiveis: string[] | null = null;
@@ -174,8 +175,8 @@ export async function getActiveChatsWithoutAnalysisFallback(
     }
   }
 
-  // Busca mensagens desde 01/11/2025
-  const dataInicio = new Date("2025-11-01T00:00:00Z");
+  // Busca mensagens a partir da data especificada ou padrão
+  const dataInicio = fromDate ? new Date(`${fromDate}T00:00:00Z`) : new Date("2025-11-01T00:00:00Z");
   let query = supabaseAdmin
     .from("mensagens_clientes")
     .select("owner, chatid")

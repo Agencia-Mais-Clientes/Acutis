@@ -11,6 +11,8 @@ export const maxDuration = 300; // 5 minutos (requer Vercel Pro, falha graciosam
 interface CronRequest {
   maxPerCompany?: number;
   maxTotal?: number;
+  fromDate?: string; // ISO date (ex: "2026-01-01") - só analisa chats a partir dessa data
+  owner?: string;    // Owner específico (ex: "5511940820844") - analisa só essa empresa
 }
 
 interface CompanyReport {
@@ -58,16 +60,32 @@ export async function POST(req: NextRequest) {
 
     const maxPerCompany = body.maxPerCompany || 20;
     const maxTotal = body.maxTotal || 100;
+    const fromDate = body.fromDate || undefined;
+    const ownerFilter = body.owner || undefined;
 
     console.log("[CRON ANALYZE] Iniciando execução automática", {
       maxPerCompany,
       maxTotal,
+      fromDate: fromDate || "default (30 dias)",
+      owner: ownerFilter || "todas as empresas",
       startedAt: new Date().toISOString(),
     });
 
-    // 1. Busca empresas ativas
-    const companies = await getActiveCompanies();
-    console.log(`[CRON ANALYZE] ${companies.length} empresa(s) ativa(s)`);
+    // 1. Busca empresas ativas (filtra por owner se especificado)
+    let companies = await getActiveCompanies();
+    
+    if (ownerFilter) {
+      companies = companies.filter((c) => c.owner === ownerFilter);
+      if (companies.length === 0) {
+        return NextResponse.json(
+          { success: false, error: `Empresa com owner '${ownerFilter}' não encontrada ou inativa` },
+          { status: 404 }
+        );
+      }
+      console.log(`[CRON ANALYZE] Filtrando por owner: ${ownerFilter} (${companies[0].nome_empresa})`);
+    } else {
+      console.log(`[CRON ANALYZE] ${companies.length} empresa(s) ativa(s)`);
+    }
 
     if (companies.length === 0) {
       return NextResponse.json({
@@ -115,7 +133,8 @@ export async function POST(req: NextRequest) {
         company,
         "trafego_pago",
         Math.min(maxPerCompany, maxTotal - totalProcessed - totalErrors),
-        startTime
+        startTime,
+        fromDate
       );
       report.trafegoPago = fase1;
       totalProcessed += fase1.processed;
@@ -128,7 +147,8 @@ export async function POST(req: NextRequest) {
           company,
           "organico",
           Math.min(maxPerCompany, maxTotal - totalProcessed - totalErrors),
-          startTime
+          startTime,
+          fromDate
         );
         report.organico = fase2;
         totalProcessed += fase2.processed;
@@ -177,7 +197,8 @@ async function processCompanyChats(
   company: ConfigEmpresa,
   origemFilter: OrigemFilter,
   maxChats: number,
-  startTime: number
+  startTime: number,
+  fromDate?: string
 ): Promise<{ processed: number; skipped: number; errors: number }> {
   let processed = 0;
   let skipped = 0;
@@ -189,7 +210,8 @@ async function processCompanyChats(
   const chats = await getActiveChatsWithoutAnalysisFallback(
     company.owner,
     maxChats,
-    origemFilter
+    origemFilter,
+    fromDate
   );
 
   if (chats.length === 0) {
