@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gargalo } from "@/lib/types";
+import { type DateRange, type PresetKey } from "@/lib/date-utils";
 import { AlertTriangle, TrendingDown, Clock, ChevronRight } from "lucide-react";
 
 interface MonitorGargalosProps {
   gargalos: Gargalo[];
   totalLeads: number;
+  dateRange?: DateRange;
+  selectedPreset?: PresetKey | null;
 }
 
 // Mapeia descrição do gargalo para query param
@@ -31,17 +33,12 @@ function getGargaloFilterParam(descricao: string): string {
   return "outros";
 }
 
-export function MonitorGargalos({ gargalos, totalLeads }: MonitorGargalosProps) {
-  const searchParams = useSearchParams();
-  
+export function MonitorGargalos({ gargalos, totalLeads, dateRange, selectedPreset }: MonitorGargalosProps) {
   const buildHref = (base: string) => {
     const url = new URL(base, "http://x");
-    const from = searchParams.get("from");
-    const to = searchParams.get("to");
-    const preset = searchParams.get("preset");
-    if (from) url.searchParams.set("from", from);
-    if (to) url.searchParams.set("to", to);
-    if (preset) url.searchParams.set("preset", preset);
+    if (dateRange?.from) url.searchParams.set("from", dateRange.from.toISOString().split("T")[0]);
+    if (dateRange?.to) url.searchParams.set("to", dateRange.to.toISOString().split("T")[0]);
+    if (selectedPreset) url.searchParams.set("preset", selectedPreset);
     return `${url.pathname}${url.search}`;
   };
   if (gargalos.length === 0) {
@@ -88,7 +85,7 @@ export function MonitorGargalos({ gargalos, totalLeads }: MonitorGargalosProps) 
             const filterParam = getGargaloFilterParam(gargalo.descricao);
             
             const href = gargalo.tipo === "perdido" || filterParam === "perdido"
-              ? buildHref("/dashboard/analises?fase=perdido")
+              ? buildHref("/dashboard/analises?fase=PERDIDO")
               : buildHref(`/dashboard/analises?gargalo=${filterParam}`);
             
             return (

@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ObjecaoRanking } from "@/lib/types";
+import { type DateRange, type PresetKey } from "@/lib/date-utils";
 import { MessageSquareWarning, Trophy, ChevronRight } from "lucide-react";
 
 interface TopObjecoesProps {
   objecoes: ObjecaoRanking[];
+  dateRange?: DateRange;
+  selectedPreset?: PresetKey | null;
 }
 
 // Normaliza nome da objeção para query param
@@ -15,18 +17,13 @@ function getObjecaoFilterParam(nome: string): string {
   return nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-export function TopObjecoes({ objecoes }: TopObjecoesProps) {
-  const searchParams = useSearchParams();
-  
+export function TopObjecoes({ objecoes, dateRange, selectedPreset }: TopObjecoesProps) {
   const buildHref = (filterParam: string) => {
     const params = new URLSearchParams();
     params.set("objecao", filterParam);
-    const from = searchParams.get("from");
-    const to = searchParams.get("to");
-    const preset = searchParams.get("preset");
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
-    if (preset) params.set("preset", preset);
+    if (dateRange?.from) params.set("from", dateRange.from.toISOString().split("T")[0]);
+    if (dateRange?.to) params.set("to", dateRange.to.toISOString().split("T")[0]);
+    if (selectedPreset) params.set("preset", selectedPreset);
     return `/dashboard/analises?${params.toString()}`;
   };
   if (objecoes.length === 0) {

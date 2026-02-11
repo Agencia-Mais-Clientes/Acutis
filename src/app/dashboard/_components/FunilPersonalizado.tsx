@@ -1,39 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { DadosFunil } from "@/lib/types";
+import { type DateRange, type PresetKey } from "@/lib/date-utils";
 import { TrendingUp } from "lucide-react";
 
 interface FunilPersonalizadoProps {
   dados: DadosFunil[];
   titulo?: string;
+  dateRange?: DateRange;
+  selectedPreset?: PresetKey | null;
 }
 
-// Mapeia nome da etapa para query param
+// Mapeia nome da etapa para key exata de FUNIL_FASE (mesmo critério de getDadosFunil)
 function getFilterParam(etapaNome: string): string {
   const nome = etapaNome.toLowerCase();
   if (nome.includes("lead") || nome.includes("recebido") || nome.includes("ticket")) return "todos";
-  if (nome.includes("qualificado") || nome.includes("negociação") || nome.includes("negociacao")) return "qualificado";
-  if (nome.includes("agendado") || nome.includes("atendimento")) return "agendado";
-  if (nome.includes("convertido") || nome.includes("vendido") || nome.includes("matriculado") || nome.includes("resolvido")) return "convertido";
-  if (nome.includes("perdido")) return "perdido";
+  if (nome.includes("qualificado") || nome.includes("negociação") || nome.includes("negociacao")) return "NEGOCIACAO";
+  if (nome.includes("agendado")) return "AGENDADO";
+  if (nome.includes("convertido") || nome.includes("vendido") || nome.includes("matriculado")) return "VENDIDO";
+  if (nome.includes("resolvido")) return "RESOLVIDO";
+  if (nome.includes("atendimento")) return "EM_ATENDIMENTO";
+  if (nome.includes("perdido")) return "PERDIDO";
   return "todos";
 }
 
-export function FunilPersonalizado({ dados, titulo = "Funil de Conversão" }: FunilPersonalizadoProps) {
-  const searchParams = useSearchParams();
-  
+export function FunilPersonalizado({ dados, titulo = "Funil de Conversão", dateRange, selectedPreset }: FunilPersonalizadoProps) {
   // Preserva from/to/preset do dashboard para a página de análises
   const buildHref = (filterParam: string) => {
     const params = new URLSearchParams();
     if (filterParam !== "todos") params.set("fase", filterParam);
-    const from = searchParams.get("from");
-    const to = searchParams.get("to");
-    const preset = searchParams.get("preset");
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
-    if (preset) params.set("preset", preset);
+    if (dateRange?.from) params.set("from", dateRange.from.toISOString().split("T")[0]);
+    if (dateRange?.to) params.set("to", dateRange.to.toISOString().split("T")[0]);
+    if (selectedPreset) params.set("preset", selectedPreset);
     const qs = params.toString();
     return `/dashboard/analises${qs ? `?${qs}` : ""}`;
   };
@@ -141,9 +140,7 @@ export function FunilPersonalizado({ dados, titulo = "Funil de Conversão" }: Fu
         <div className="flex items-center gap-3 flex-wrap">
           {dadosOrdenados.map((item) => {
             const filterParam = getFilterParam(item.etapa.nome);
-            const href = filterParam === "todos" 
-              ? "/dashboard/analises" 
-              : `/dashboard/analises?fase=${filterParam}`;
+            const href = buildHref(filterParam);
             
             return (
               <Link 
@@ -166,7 +163,7 @@ export function FunilPersonalizado({ dados, titulo = "Funil de Conversão" }: Fu
         {/* Perdidos - Clicável */}
         {perdidos && perdidos.quantidade > 0 && (
           <Link 
-            href={buildHref("perdido")}
+            href={buildHref("PERDIDO")}
             className="flex items-center gap-1.5 text-[11px] hover:opacity-70 transition-opacity"
           >
             <div className="w-2 h-2 rounded-full bg-red-500" />

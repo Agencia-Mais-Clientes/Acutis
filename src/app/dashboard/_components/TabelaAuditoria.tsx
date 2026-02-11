@@ -13,6 +13,7 @@ import { ChevronDown, Search, X } from "lucide-react";
 import { type DateRange, type PresetKey, getPresets } from "@/lib/date-utils";
 
 import { categorizarObjecaoLegado } from "@/lib/objecao-utils";
+import { matchFase, FUNIL_FASE } from "@/lib/constants";
 
 export interface FiltrosIniciais {
   fase?: string;
@@ -96,32 +97,21 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
       const tipo = a.resultado_ia?.tipo_conversacao || "";
       const matchTipo = filtroTipo === "ALL" || tipo === filtroTipo;
 
-      const funil = a.resultado_ia?.funil_fase?.toLowerCase() || "";
-      let matchFunil = filtroFunil === "ALL";
-      if (filtroFunil === "SUCESSO" || filtroFunil === "CONVERTIDO") {
-        matchFunil = funil.includes("vendido") || funil.includes("agendado") || funil.includes("matriculado") || funil.includes("resolvido") || funil.includes("convertido");
-      } else if (filtroFunil === "AGENDADO") {
-        matchFunil = funil.includes("agendado");
-      } else if (filtroFunil === "QUALIFICADO") {
-        matchFunil = funil.includes("qualificado") || funil.includes("negociação") || funil.includes("negociacao") || funil.includes("interessado");
-      } else if (filtroFunil === "NEGOCIACAO") {
-        matchFunil = funil.includes("negociação") || funil.includes("negociacao");
-      } else if (filtroFunil === "PERDIDO") {
-        matchFunil = funil.includes("perdido") || funil.includes("desistiu") || funil.includes("vácuo") || funil.includes("vacuo");
-      }
+      const matchFunil = filtroFunil === "ALL" || matchFase(a.resultado_ia?.funil_fase, filtroFunil as keyof typeof FUNIL_FASE);
 
       // Filtro Gargalo
       let matchGargalo = filtroGargalo === "ALL";
       if (filtroGargalo !== "ALL") {
         const gargalo = filtroGargalo.toLowerCase();
+        const funilFase = a.resultado_ia?.funil_fase?.toLowerCase() || "";
         if (gargalo === "negociacao") {
-          matchGargalo = funil.includes("negociação") || funil.includes("negociacao");
+          matchGargalo = matchFase(a.resultado_ia?.funil_fase, "NEGOCIACAO");
         } else if (gargalo === "sem_resposta") {
-          matchGargalo = funil.includes("vácuo") || funil.includes("vacuo") || funil.includes("sem resposta");
+          matchGargalo = funilFase.includes("vácuo") || funilFase.includes("vacuo") || funilFase.includes("sem resposta");
         } else if (gargalo === "perdido") {
-          matchGargalo = funil.includes("perdido");
+          matchGargalo = matchFase(a.resultado_ia?.funil_fase, "PERDIDO");
         } else if (gargalo === "travado") {
-          matchGargalo = true; // Todo lead não convertido é tecnicamente travado em algum lugar se não for perdido recente
+          matchGargalo = !matchFase(a.resultado_ia?.funil_fase, "VENDIDO") && !matchFase(a.resultado_ia?.funil_fase, "PERDIDO");
         }
       }
 
@@ -255,9 +245,11 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
                 className="bg-white text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer hover:bg-muted/50 transition-colors shadow-sm"
               >
                 <option value="ALL">Todas Fases</option>
-                <option value="SUCESSO">✅ Sucesso</option>
+                <option value="VENDIDO">✅ Convertido</option>
+                <option value="AGENDADO">📅 Agendado</option>
                 <option value="NEGOCIACAO">🔄 Negociação</option>
-                <option value="PERDIDO">❌ Perdidos</option>
+                <option value="PERDIDO">❌ Perdido</option>
+                <option value="RESOLVIDO">🔧 Resolvido</option>
               </select>
 
               {/* Origem (Tráfego Pago) */}

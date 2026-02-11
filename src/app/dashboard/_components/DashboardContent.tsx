@@ -208,13 +208,15 @@ export function DashboardContent({
               <FunilPersonalizado
                 dados={funilVendas}
                 titulo="Funil de Vendas"
+                dateRange={dateRange}
+                selectedPreset={selectedPreset}
               />
-              <MonitorGargalos gargalos={gargalos} totalLeads={kpis.vendas.totalLeads} />
+              <MonitorGargalos gargalos={gargalos} totalLeads={kpis.vendas.totalLeads} dateRange={dateRange} selectedPreset={selectedPreset} />
             </div>
           </SlideUp>
 
           <SlideUp delay={0.2}>
-            <TopObjecoes objecoes={objecoes} />
+            <TopObjecoes objecoes={objecoes} dateRange={dateRange} selectedPreset={selectedPreset} />
           </SlideUp>
         </div>
       ) : (
@@ -227,6 +229,8 @@ export function DashboardContent({
             <FunilPersonalizado
               dados={funilSuporte}
               titulo="Funil de Suporte"
+              dateRange={dateRange}
+              selectedPreset={selectedPreset}
             />
           </SlideUp>
 
