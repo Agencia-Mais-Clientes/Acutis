@@ -84,7 +84,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "missing_fields" }, { status: 400 });
     }
     
-    const chatid = chat.wa_chatid;
+    // Normaliza chatid: garante sufixo @s.whatsapp.net
+    const rawChatid = chat.wa_chatid;
+    const chatid = rawChatid.includes("@") ? rawChatid : `${rawChatid}@s.whatsapp.net`;
     const messageText = message.text || message.content?.text || "";
     
     // ============================================
