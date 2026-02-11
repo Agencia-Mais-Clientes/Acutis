@@ -1,2 +1,1 @@
 git commit --author="redesmaisclientes-alt <redesmaisclientes@gmail.com>" -m "Deploy Vercel"
-.
