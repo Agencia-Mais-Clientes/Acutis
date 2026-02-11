@@ -50,6 +50,25 @@ export function parsePeriodo(periodo?: { inicio: string; fim: string }): { inici
 }
 
 /**
+ * Extrai a data de entrada de uma análise com fallback para created_at.
+ * Prioridade: data_entrada_lead (BR format) → created_at (ISO format)
+ */
+export function getDataEntradaAnalise(
+  dataEntradaLead: string | null | undefined,
+  createdAt: string | null | undefined
+): Date | null {
+  const parsed = parseDataBR(dataEntradaLead);
+  if (parsed) return parsed;
+
+  if (createdAt) {
+    const fallback = new Date(createdAt);
+    if (!isNaN(fallback.getTime())) return fallback;
+  }
+
+  return null;
+}
+
+/**
  * Formata uma data para exibição no padrão brasileiro
  */
 export function formatDataBR(data: Date): string {

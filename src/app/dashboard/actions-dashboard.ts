@@ -12,7 +12,7 @@ import {
 } from "@/lib/types";
 import { getAnalises } from "./actions";
 import { getCategoriaObjecao } from "@/lib/objecao-utils";
-import { parseDataBR, dentroDoPeriodo, getMesAtual } from "@/lib/date-utils";
+import { dentroDoPeriodo, getMesAtual, getDataEntradaAnalise } from "@/lib/date-utils";
 import { matchFase } from "@/lib/constants";
 
 // ============================================
@@ -33,7 +33,10 @@ export async function getKPIsDashboard(
 
   // Filtra TODAS as análises pelo período PRIMEIRO (usando data_entrada_lead de mensagens_clientes)
   const analisesFiltradas = analises.filter((a) => {
-    const dataEntrada = parseDataBR(a.resultado_ia?.metrics?.data_entrada_lead);
+    const dataEntrada = getDataEntradaAnalise(
+      a.resultado_ia?.metrics?.data_entrada_lead,
+      a.created_at
+    );
     return dentroDoPeriodo(dataEntrada, dataInicio, dataFim);
   });
 
@@ -199,7 +202,10 @@ export async function getDadosFunil(
 
   // Filtra pelo período usando data_entrada_lead
   const analisesFiltradas = analisesPorTipo.filter((a) => {
-    const dataEntrada = parseDataBR(a.resultado_ia?.metrics?.data_entrada_lead);
+    const dataEntrada = getDataEntradaAnalise(
+      a.resultado_ia?.metrics?.data_entrada_lead,
+      a.created_at
+    );
     return dentroDoPeriodo(dataEntrada, dataInicio, dataFim);
   });
 

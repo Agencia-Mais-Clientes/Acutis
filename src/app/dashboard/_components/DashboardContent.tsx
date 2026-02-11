@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useTransition, useEffect, useMemo, useRef } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { DashboardTabs } from "./DashboardTabs";
 import { AdvancedDateRangePicker } from "./AdvancedDateRangePicker";
 import { KPICardsVendas } from "./KPICardsVendas";
@@ -42,7 +42,6 @@ export function DashboardContent({
   initialObjecoes,
 }: DashboardContentProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const presets = useMemo(() => getPresets(), []);
   const didInitialLoad = useRef(false);
@@ -51,6 +50,9 @@ export function DashboardContent({
   const [comparisonRange, setComparisonRange] = useState<DateRange | undefined>();
   const [compareEnabled, setCompareEnabled] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // Track if user has actively changed the period filter (prevents server re-render from overwriting)
+  const isClientFiltered = useRef(false);
 
   // Initialize dateRange from URL or default ("thisMonth")
   const urlPreset = searchParams.get("preset") as PresetKey | null;
@@ -85,18 +87,31 @@ export function DashboardContent({
   const [gargalos, setGargalos] = useState<Gargalo[]>(initialGargalos);
   const [objecoes, setObjecoes] = useState<ObjecaoRanking[]>(initialObjecoes);
 
-  // Sync state with props when they change (e.g. after company switch -> router.refresh)
-  useEffect(() => { setKpis(initialKpis); }, [initialKpis]);
-  useEffect(() => { setFunilVendas(initialFunilVendas); }, [initialFunilVendas]);
-  useEffect(() => { setFunilSuporte(initialFunilSuporte); }, [initialFunilSuporte]);
-  useEffect(() => { setGargalos(initialGargalos); }, [initialGargalos]);
-  useEffect(() => { setObjecoes(initialObjecoes); }, [initialObjecoes]);
+  // Track ownerId to detect company switch (only case where server data should overwrite)
+  const prevOwnerRef = useRef(ownerId);
+
+  // Sync state with props ONLY on company switch (not on URL-triggered re-renders)
+  useEffect(() => {
+    if (prevOwnerRef.current !== ownerId) {
+      // Company changed — accept server data and reset filter flag
+      prevOwnerRef.current = ownerId;
+      isClientFiltered.current = false;
+      setKpis(initialKpis);
+      setFunilVendas(initialFunilVendas);
+      setFunilSuporte(initialFunilSuporte);
+      setGargalos(initialGargalos);
+      setObjecoes(initialObjecoes);
+    }
+    // When user has actively filtered, do NOT overwrite with server data
+    // (router.replace for URL persistence triggers server re-render with default period)
+  }, [ownerId, initialKpis, initialFunilVendas, initialFunilSuporte, initialGargalos, initialObjecoes]);
 
   // On mount: if URL has date params, reload data with that period
   useEffect(() => {
     if (didInitialLoad.current) return;
     didInitialLoad.current = true;
     if (initialDateRange) {
+      isClientFiltered.current = true;
       reloadData(initialDateRange);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,7 +141,7 @@ export function DashboardContent({
     });
   }, [ownerId]);
 
-  // Persist date range to URL
+  // Persist date range to URL (shallow, no server re-render)
   const updateUrlParams = useCallback((range: DateRange, preset?: PresetKey | null) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("from", range.from.toISOString().split("T")[0]);
@@ -136,14 +151,15 @@ export function DashboardContent({
     } else {
       params.delete("preset");
     }
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [searchParams, pathname, router]);
+    window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
+  }, [searchParams, pathname]);
 
   // Handler de mudança de data
   const handleDateChange = useCallback((range: DateRange, comparison?: DateRange, preset?: PresetKey | null) => {
     setDateRange(range);
     setComparisonRange(comparison);
     if (preset !== undefined) setSelectedPreset(preset);
+    isClientFiltered.current = true;
     reloadData(range);
     updateUrlParams(range, preset);
   }, [reloadData, updateUrlParams]);

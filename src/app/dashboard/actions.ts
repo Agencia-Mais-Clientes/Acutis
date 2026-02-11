@@ -3,7 +3,7 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { AnaliseConversa, KPIs, Gargalo, ObjecaoRanking, CategoriaObjecao, ObjecaoDetectada } from "@/lib/types";
 import { categorizarObjecaoLegado, getCategoriaObjecao } from "@/lib/objecao-utils";
-import { parseDataBR, dentroDoPeriodo, getMesAtual, parsePeriodo } from "@/lib/date-utils";
+import { dentroDoPeriodo, parsePeriodo, getDataEntradaAnalise } from "@/lib/date-utils";
 import { requireAuth } from "@/lib/auth-utils";
 import { matchFase, TIPO_CONVERSACAO} from "@/lib/constants";
 
@@ -11,7 +11,7 @@ import { matchFase, TIPO_CONVERSACAO} from "@/lib/constants";
 // HELPERS INTERNOS
 // ============================================
 
-/** Filtra análises por data_entrada_lead dentro do período */
+/** Filtra análises por data de entrada dentro do período (fallback: created_at) */
 function filtrarPorPeriodo(
   analises: AnaliseConversa[],
   periodo?: { inicio: string; fim: string }
@@ -19,7 +19,10 @@ function filtrarPorPeriodo(
   const { inicio: dataInicio, fim: dataFim } = parsePeriodo(periodo);
 
   return analises.filter((a) => {
-    const dataEntrada = parseDataBR(a.resultado_ia?.metrics?.data_entrada_lead);
+    const dataEntrada = getDataEntradaAnalise(
+      a.resultado_ia?.metrics?.data_entrada_lead,
+      a.created_at
+    );
     return dentroDoPeriodo(dataEntrada, dataInicio, dataFim);
   });
 }
