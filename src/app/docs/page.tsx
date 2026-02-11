@@ -232,8 +232,8 @@ function CodeBlock({ code, title }: { code: string; title?: string }) {
   );
 }
 
-function EndpointCard({ endpoint }: { endpoint: typeof ENDPOINTS[number] }) {
-  const [expanded, setExpanded] = useState(false);
+function EndpointCard({ endpoint, defaultOpen = false }: { endpoint: typeof ENDPOINTS[number]; defaultOpen?: boolean }) {
+  const [expanded, setExpanded] = useState(defaultOpen);
 
   return (
     <div
@@ -607,8 +607,8 @@ curl -X POST "${BASE_URL}/api/cron/analyze" \\
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {ENDPOINTS.map((ep) => (
-              <EndpointCard key={ep.id} endpoint={ep} />
+            {ENDPOINTS.map((ep, i) => (
+              <EndpointCard key={ep.id} endpoint={ep} defaultOpen={i === 0} />
             ))}
           </div>
         </div>
