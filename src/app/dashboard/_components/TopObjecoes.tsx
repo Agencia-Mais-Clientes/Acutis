@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ObjecaoRanking } from "@/lib/types";
 import { MessageSquareWarning, Trophy, ChevronRight } from "lucide-react";
@@ -15,6 +16,19 @@ function getObjecaoFilterParam(nome: string): string {
 }
 
 export function TopObjecoes({ objecoes }: TopObjecoesProps) {
+  const searchParams = useSearchParams();
+  
+  const buildHref = (filterParam: string) => {
+    const params = new URLSearchParams();
+    params.set("objecao", filterParam);
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    const preset = searchParams.get("preset");
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    if (preset) params.set("preset", preset);
+    return `/dashboard/analises?${params.toString()}`;
+  };
   if (objecoes.length === 0) {
     return (
       <Card className="shadow-lg border-none bg-white">
@@ -70,7 +84,7 @@ export function TopObjecoes({ objecoes }: TopObjecoesProps) {
           return (
             <Link 
               key={objecao.categoria} 
-              href={`/dashboard/analises?objecao=${filterParam}`}
+              href={buildHref(filterParam)}
               className="block group"
             >
               <div className="space-y-2 p-2 rounded-lg transition-colors hover:bg-gray-50 -mx-2">

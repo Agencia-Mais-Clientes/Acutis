@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gargalo } from "@/lib/types";
 import { AlertTriangle, TrendingDown, Clock, ChevronRight } from "lucide-react";
@@ -31,6 +32,18 @@ function getGargaloFilterParam(descricao: string): string {
 }
 
 export function MonitorGargalos({ gargalos, totalLeads }: MonitorGargalosProps) {
+  const searchParams = useSearchParams();
+  
+  const buildHref = (base: string) => {
+    const url = new URL(base, "http://x");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    const preset = searchParams.get("preset");
+    if (from) url.searchParams.set("from", from);
+    if (to) url.searchParams.set("to", to);
+    if (preset) url.searchParams.set("preset", preset);
+    return `${url.pathname}${url.search}`;
+  };
   if (gargalos.length === 0) {
     return (
       <Card className="shadow-lg border-none bg-white">
@@ -74,10 +87,9 @@ export function MonitorGargalos({ gargalos, totalLeads }: MonitorGargalosProps) 
             const isRed = gargalo.cor === "red";
             const filterParam = getGargaloFilterParam(gargalo.descricao);
             
-            // Usa ?fase=perdido para tipo perdido, pois é fase do funil
             const href = gargalo.tipo === "perdido" || filterParam === "perdido"
-              ? "/dashboard/analises?fase=perdido"
-              : `/dashboard/analises?gargalo=${filterParam}`;
+              ? buildHref("/dashboard/analises?fase=perdido")
+              : buildHref(`/dashboard/analises?gargalo=${filterParam}`);
             
             return (
               <Link 

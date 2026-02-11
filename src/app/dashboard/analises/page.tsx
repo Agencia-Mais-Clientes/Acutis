@@ -31,6 +31,9 @@ export default async function AnalisesPage({
     gargalo: typeof sp.gargalo === "string" ? sp.gargalo : undefined,
     objecao: typeof sp.objecao === "string" ? sp.objecao : undefined,
     tipo: typeof sp.tipo === "string" ? sp.tipo : undefined,
+    from: typeof sp.from === "string" ? sp.from : undefined,
+    to: typeof sp.to === "string" ? sp.to : undefined,
+    preset: typeof sp.preset === "string" ? sp.preset : undefined,
   };
 
   return (

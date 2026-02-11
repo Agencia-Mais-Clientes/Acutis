@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { DadosFunil } from "@/lib/types";
 import { TrendingUp } from "lucide-react";
 
@@ -21,6 +22,21 @@ function getFilterParam(etapaNome: string): string {
 }
 
 export function FunilPersonalizado({ dados, titulo = "Funil de Conversão" }: FunilPersonalizadoProps) {
+  const searchParams = useSearchParams();
+  
+  // Preserva from/to/preset do dashboard para a página de análises
+  const buildHref = (filterParam: string) => {
+    const params = new URLSearchParams();
+    if (filterParam !== "todos") params.set("fase", filterParam);
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    const preset = searchParams.get("preset");
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    if (preset) params.set("preset", preset);
+    const qs = params.toString();
+    return `/dashboard/analises${qs ? `?${qs}` : ""}`;
+  };
   if (!dados || dados.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
@@ -64,9 +80,7 @@ export function FunilPersonalizado({ dados, titulo = "Funil de Conversão" }: Fu
         {dadosOrdenados.map((item, index) => {
           const isLast = index === dadosOrdenados.length - 1;
           const filterParam = getFilterParam(item.etapa.nome);
-          const href = filterParam === "todos" 
-            ? "/dashboard/analises" 
-            : `/dashboard/analises?fase=${filterParam}`;
+          const href = buildHref(filterParam);
 
           return (
             <Link 
@@ -152,7 +166,7 @@ export function FunilPersonalizado({ dados, titulo = "Funil de Conversão" }: Fu
         {/* Perdidos - Clicável */}
         {perdidos && perdidos.quantidade > 0 && (
           <Link 
-            href="/dashboard/analises?fase=perdido"
+            href={buildHref("perdido")}
             className="flex items-center gap-1.5 text-[11px] hover:opacity-70 transition-opacity"
           >
             <div className="w-2 h-2 rounded-full bg-red-500" />

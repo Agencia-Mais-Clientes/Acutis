@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { AnaliseConversa } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DetalheLead } from "./DetalheLead";
+import { AdvancedDateRangePicker } from "./AdvancedDateRangePicker";
 import { ChevronDown, Search, X } from "lucide-react";
+import { type DateRange, type PresetKey, getPresets } from "@/lib/date-utils";
 
 import { categorizarObjecaoLegado } from "@/lib/objecao-utils";
 
@@ -17,6 +19,9 @@ export interface FiltrosIniciais {
   gargalo?: string;
   objecao?: string;
   tipo?: string;
+  from?: string;
+  to?: string;
+  preset?: string;
 }
 
 interface TabelaAuditoriaProps {
@@ -32,11 +37,40 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
   const [filtroObjecao, setFiltroObjecao] = useState<string>(filtroInicial?.objecao || "ALL");
   const [filtroOrigem, setFiltroOrigem] = useState<string>("ALL");
   const [filtroTemp, setFiltroTemp] = useState<string>("ALL");
-  const [filtroPeriodo, setFiltroPeriodo] = useState<string>("ALL");
   const [analiseSelecionada, setAnaliseSelecionada] = useState<AnaliseConversa | null>(null);
 
+  // Date range state — inicializa do URL (from/to/preset) ou undefined (sem filtro)
+  const presets = getPresets();
+  const initialPresetKey = (filtroInicial?.preset as PresetKey) || null;
+
+  const initialDateRange = useMemo<DateRange | undefined>(() => {
+    if (filtroInicial?.from && filtroInicial?.to) {
+      const from = new Date(filtroInicial.from);
+      const to = new Date(filtroInicial.to);
+      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+        from.setHours(0, 0, 0, 0);
+        to.setHours(23, 59, 59, 999);
+        return { from, to };
+      }
+    }
+    if (initialPresetKey) {
+      const preset = presets.find(p => p.key === initialPresetKey);
+      if (preset) return preset.getValue();
+    }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(initialDateRange);
+  const [selectedPreset, setSelectedPreset] = useState<PresetKey | null>(initialPresetKey);
+
+  const handleDateChange = useCallback((range: DateRange, _comparison?: DateRange, preset?: PresetKey | null) => {
+    setDateRange(range);
+    if (preset !== undefined) setSelectedPreset(preset);
+  }, []);
+
   // Check if any filter is active
-  const hasActiveFilters = filtroTipo !== "ALL" || filtroFunil !== "ALL" || filtroGargalo !== "ALL" || filtroObjecao !== "ALL" || filtroOrigem !== "ALL" || filtroTemp !== "ALL" || filtroPeriodo !== "ALL" || busca !== "";
+  const hasActiveFilters = filtroTipo !== "ALL" || filtroFunil !== "ALL" || filtroGargalo !== "ALL" || filtroObjecao !== "ALL" || filtroOrigem !== "ALL" || filtroTemp !== "ALL" || dateRange !== undefined || busca !== "";
 
   // Clear all filters
   const clearFilters = () => {
@@ -47,7 +81,8 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
     setFiltroObjecao("ALL");
     setFiltroOrigem("ALL");
     setFiltroTemp("ALL");
-    setFiltroPeriodo("ALL");
+    setDateRange(undefined);
+    setSelectedPreset(null);
   };
 
   // Filtro das análises
@@ -140,26 +175,37 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
         matchTemp = temp.includes("frio");
       }
 
-      // Período filter
-      const dataAnalise = new Date(a.created_at);
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
-      let matchPeriodo = filtroPeriodo === "ALL";
-      if (filtroPeriodo === "HOJE") {
-        matchPeriodo = dataAnalise >= hoje;
-      } else if (filtroPeriodo === "7D") {
-        const seteDiasAtras = new Date(hoje);
-        seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
-        matchPeriodo = dataAnalise >= seteDiasAtras;
-      } else if (filtroPeriodo === "30D") {
-        const trintaDiasAtras = new Date(hoje);
-        trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
-        matchPeriodo = dataAnalise >= trintaDiasAtras;
+      // Período filter — usa data_entrada_lead (data real do lead via mensagens_clientes)
+      const dataEntradaStr = a.resultado_ia?.metrics?.data_entrada_lead;
+      let dataLead: Date | null = null;
+      if (dataEntradaStr) {
+        const match = dataEntradaStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+        if (match) {
+          dataLead = new Date(
+            parseInt(match[3]),
+            parseInt(match[2]) - 1,
+            parseInt(match[1])
+          );
+        }
+      }
+      // Fallback para created_at se data_entrada_lead não disponível
+      if (!dataLead) {
+        dataLead = new Date(a.created_at);
+      }
+
+      // Período filter — usa dateRange do AdvancedDateRangePicker
+      let matchPeriodo = !dateRange; // sem dateRange = mostra todos
+      if (dateRange) {
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        matchPeriodo = dataLead >= fromDate && dataLead <= toDate;
       }
 
       return matchBusca && matchTipo && matchFunil && matchGargalo && matchObjecao && matchOrigem && matchTemp && matchPeriodo;
     });
-  }, [analises, busca, filtroTipo, filtroFunil, filtroGargalo, filtroObjecao, filtroOrigem, filtroTemp, filtroPeriodo]);
+  }, [analises, busca, filtroTipo, filtroFunil, filtroGargalo, filtroObjecao, filtroOrigem, filtroTemp, dateRange]);
 
   return (
     <>
@@ -249,21 +295,13 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
                 <option value="FRIO">❄️ Frio</option>
               </select>
 
-              {/* Período */}
-              <select
-                value={filtroPeriodo}
-                onChange={(e) => setFiltroPeriodo(e.target.value)}
-                className={`text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer transition-colors shadow-sm ${
-                  filtroPeriodo !== "ALL" 
-                    ? "bg-purple-50 border-purple-200 text-purple-700 font-medium" 
-                    : "bg-white hover:bg-muted/50"
-                }`}
-              >
-                <option value="ALL">📅 Todo Período</option>
-                <option value="HOJE">Hoje</option>
-                <option value="7D">Últimos 7 dias</option>
-                <option value="30D">Últimos 30 dias</option>
-              </select>
+              {/* Período — mesmo date picker do dashboard */}
+              <AdvancedDateRangePicker
+                value={dateRange}
+                onChange={handleDateChange}
+                initialPreset={selectedPreset}
+                className="h-8"
+              />
 
               {/* Busca */}
               <div className="relative ml-auto">
