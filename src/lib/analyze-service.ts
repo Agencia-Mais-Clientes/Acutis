@@ -82,28 +82,35 @@ export async function getActiveCompanies(): Promise<ConfigEmpresa[]> {
 }
 
 /**
- * Busca chats ativos sem análise nas últimas 24h
- * Reproduz exatamente a query do N8N
+ * Busca chats ativos com mensagens novas desde a última análise
+ * Inclui chats NUNCA analisados e chats com mensagens NOVAS
  */
 export async function getActiveChatsWithoutAnalysis(
   ownerId?: string,
   limit = 50
 ): Promise<ChatAtivo[]> {
-  // Query raw para reproduzir exatamente o SQL do N8N
+  // Query: busca chats que nunca foram analisados OU que têm mensagens
+  // com ID maior que o msg_fim_id da última análise
   const query = `
     SELECT DISTINCT m.owner, m.chatid
     FROM public.mensagens_clientes m
     INNER JOIN public.config_empresas c ON m.owner = c.owner
-    LEFT JOIN public.analises_conversas a ON (
-        m.chatid = a.chatid 
-        AND a.created_at > (NOW() - INTERVAL '24 hours') 
-    )
+    LEFT JOIN LATERAL (
+      SELECT a.msg_fim_id
+      FROM public.analises_conversas a
+      WHERE a.chatid = m.chatid
+      ORDER BY a.created_at DESC
+      LIMIT 1
+    ) last_analysis ON TRUE
     WHERE 
         m.recebido_em >= (NOW() - INTERVAL '30 days') 
-        AND a.id IS NULL
         AND m.chatid NOT LIKE '%@g.us'
         AND m.chatid IS NOT NULL
         AND m.chatid != ''
+        AND (
+          last_analysis.msg_fim_id IS NULL
+          OR m.id > last_analysis.msg_fim_id
+        )
         ${ownerId ? `AND m.owner = '${ownerId}'` : ""}
     ORDER BY m.chatid
     LIMIT ${limit};
@@ -202,27 +209,52 @@ export async function getActiveChatsWithoutAnalysisFallback(
     }
   });
 
-  // Filtra quem já tem análise nas últimas 24h
+  // Verifica quais chats têm mensagens NOVAS após a última análise
   const chatids = Array.from(chatsUnicos.keys());
   
   if (chatids.length === 0) {
     return [];
   }
   
-  const { data: analisesRecentes } = await supabaseAdmin
+  // Busca última análise de cada chat (msg_fim_id = cursor da última mensagem processada)
+  const { data: ultimasAnalises } = await supabaseAdmin
     .from("analises_conversas")
-    .select("chatid")
+    .select("chatid, msg_fim_id")
     .in("chatid", chatids)
-    .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+    .order("created_at", { ascending: false });
 
-  const chatidsComAnalise = new Set((analisesRecentes || []).map((a) => a.chatid));
+  // Mapa: chatid → último msg_fim_id analisado (pega só a mais recente por chat)
+  const ultimoIdAnalisado = new Map<string, number>();
+  (ultimasAnalises || []).forEach((a) => {
+    if (!ultimoIdAnalisado.has(a.chatid)) {
+      ultimoIdAnalisado.set(a.chatid, a.msg_fim_id || 0);
+    }
+  });
 
-  // Retorna apenas quem NÃO tem análise recente
-  const resultado = Array.from(chatsUnicos.values()).filter(
-    (c) => !chatidsComAnalise.has(c.chatid)
-  );
+  // Filtra: inclui chats NUNCA analisados OU que têm mensagens NOVAS após última análise
+  const chatsPendentes: ChatAtivo[] = [];
+  
+  for (const chat of chatsUnicos.values()) {
+    const lastAnalyzedId = ultimoIdAnalisado.get(chat.chatid);
+    
+    if (lastAnalyzedId === undefined) {
+      // Nunca analisado → incluir
+      chatsPendentes.push(chat);
+    } else {
+      // Já analisado → verificar se tem mensagens novas após o cursor
+      const { count } = await supabaseAdmin
+        .from("mensagens_clientes")
+        .select("id", { count: "exact", head: true })
+        .eq("chatid", chat.chatid)
+        .gt("id", lastAnalyzedId);
+      
+      if (count && count > 0) {
+        chatsPendentes.push(chat);
+      }
+    }
+  }
 
-  return resultado.slice(0, limit);
+  return chatsPendentes.slice(0, limit);
 }
 
 /**
