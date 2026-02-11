@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useTransition } from "react";
+import { useState, useCallback, useTransition, useEffect, useMemo, useRef } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { DashboardTabs } from "./DashboardTabs";
 import { AdvancedDateRangePicker } from "./AdvancedDateRangePicker";
 import { KPICardsVendas } from "./KPICardsVendas";
@@ -15,7 +16,7 @@ import {
   Gargalo,
   ObjecaoRanking 
 } from "@/lib/types";
-import { type DateRange } from "@/lib/date-utils";
+import { type DateRange, type PresetKey, getPresets } from "@/lib/date-utils";
 import { getKPIsDashboard, getDadosFunil } from "../actions-dashboard";
 import { getGargalos, getTopObjecoes } from "../actions";
 import { Loader2 } from "lucide-react";
@@ -40,11 +41,42 @@ export function DashboardContent({
   initialGargalos,
   initialObjecoes,
 }: DashboardContentProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const presets = useMemo(() => getPresets(), []);
+  const didInitialLoad = useRef(false);
+
   const [activeTab, setActiveTab] = useState<Tab>("vendas");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [comparisonRange, setComparisonRange] = useState<DateRange | undefined>();
   const [compareEnabled, setCompareEnabled] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // Initialize dateRange from URL or default ("thisMonth")
+  const urlPreset = searchParams.get("preset") as PresetKey | null;
+  const urlFrom = searchParams.get("from");
+  const urlTo = searchParams.get("to");
+
+  const initialDateRange = useMemo<DateRange | undefined>(() => {
+    if (urlFrom && urlTo) {
+      const from = new Date(urlFrom);
+      const to = new Date(urlTo);
+      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+        from.setHours(0, 0, 0, 0);
+        to.setHours(23, 59, 59, 999);
+        return { from, to };
+      }
+    }
+    if (urlPreset) {
+      const preset = presets.find(p => p.key === urlPreset);
+      if (preset) return preset.getValue();
+    }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(initialDateRange);
+  const [selectedPreset, setSelectedPreset] = useState<PresetKey | null>(urlPreset || "thisMonth");
 
   // Estados dos dados
   const [kpis, setKpis] = useState<KPIsDashboard>(initialKpis);
@@ -52,6 +84,23 @@ export function DashboardContent({
   const [funilSuporte, setFunilSuporte] = useState<DadosFunil[]>(initialFunilSuporte);
   const [gargalos, setGargalos] = useState<Gargalo[]>(initialGargalos);
   const [objecoes, setObjecoes] = useState<ObjecaoRanking[]>(initialObjecoes);
+
+  // Sync state with props when they change (e.g. after company switch -> router.refresh)
+  useEffect(() => { setKpis(initialKpis); }, [initialKpis]);
+  useEffect(() => { setFunilVendas(initialFunilVendas); }, [initialFunilVendas]);
+  useEffect(() => { setFunilSuporte(initialFunilSuporte); }, [initialFunilSuporte]);
+  useEffect(() => { setGargalos(initialGargalos); }, [initialGargalos]);
+  useEffect(() => { setObjecoes(initialObjecoes); }, [initialObjecoes]);
+
+  // On mount: if URL has date params, reload data with that period
+  useEffect(() => {
+    if (didInitialLoad.current) return;
+    didInitialLoad.current = true;
+    if (initialDateRange) {
+      reloadData(initialDateRange);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Recarrega dados quando muda o período
   const reloadData = useCallback(async (range: DateRange) => {
@@ -77,12 +126,27 @@ export function DashboardContent({
     });
   }, [ownerId]);
 
+  // Persist date range to URL
+  const updateUrlParams = useCallback((range: DateRange, preset?: PresetKey | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("from", range.from.toISOString().split("T")[0]);
+    params.set("to", range.to.toISOString().split("T")[0]);
+    if (preset) {
+      params.set("preset", preset);
+    } else {
+      params.delete("preset");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [searchParams, pathname, router]);
+
   // Handler de mudança de data
-  const handleDateChange = useCallback((range: DateRange, comparison?: DateRange) => {
+  const handleDateChange = useCallback((range: DateRange, comparison?: DateRange, preset?: PresetKey | null) => {
     setDateRange(range);
     setComparisonRange(comparison);
+    if (preset !== undefined) setSelectedPreset(preset);
     reloadData(range);
-  }, [reloadData]);
+    updateUrlParams(range, preset);
+  }, [reloadData, updateUrlParams]);
 
   // Handler de mudança de comparação
   const handleCompareChange = useCallback((enabled: boolean) => {
@@ -110,6 +174,7 @@ export function DashboardContent({
             compareEnabled={compareEnabled}
             onChange={handleDateChange}
             onCompareChange={handleCompareChange}
+            initialPreset={selectedPreset}
           />
         </div>
       </div>

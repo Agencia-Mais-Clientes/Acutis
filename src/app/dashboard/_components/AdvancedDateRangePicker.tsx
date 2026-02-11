@@ -20,8 +20,9 @@ interface AdvancedDateRangePickerProps {
   value?: DateRange;
   comparisonValue?: DateRange;
   compareEnabled?: boolean;
-  onChange: (range: DateRange, comparison?: DateRange) => void;
+  onChange: (range: DateRange, comparison?: DateRange, preset?: PresetKey | null) => void;
   onCompareChange?: (enabled: boolean) => void;
+  initialPreset?: PresetKey | null;
   className?: string;
 }
 
@@ -36,10 +37,11 @@ export function AdvancedDateRangePicker({
   compareEnabled = false,
   onChange,
   onCompareChange,
+  initialPreset,
   className,
 }: AdvancedDateRangePickerProps) {
   const [open, setOpen] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<PresetKey | null>("thisMonth");
+  const [selectedPreset, setSelectedPreset] = useState<PresetKey | null>(initialPreset ?? "thisMonth");
   const [comparisonType, setComparisonType] = useState<ComparisonType>("previous");
   const [localCompareEnabled, setLocalCompareEnabled] = useState(compareEnabled);
 
@@ -74,7 +76,7 @@ export function AdvancedDateRangePicker({
         ? getComparisonPeriod(newRange, comparisonType)
         : undefined;
 
-      onChange(newRange, comparison);
+      onChange(newRange, comparison, key);
     },
     [presets, localCompareEnabled, comparisonType, onChange]
   );
@@ -99,7 +101,7 @@ export function AdvancedDateRangePicker({
         ? getComparisonPeriod(newRange, comparisonType)
         : undefined;
 
-      onChange(newRange, comparison);
+      onChange(newRange, comparison, null);
     },
     [localCompareEnabled, comparisonType, onChange]
   );
@@ -112,11 +114,11 @@ export function AdvancedDateRangePicker({
 
     if (newEnabled) {
       const comparison = getComparisonPeriod(currentRange, comparisonType);
-      onChange(currentRange, comparison);
+      onChange(currentRange, comparison, selectedPreset);
     } else {
-      onChange(currentRange, undefined);
+      onChange(currentRange, undefined, selectedPreset);
     }
-  }, [localCompareEnabled, onCompareChange, currentRange, comparisonType, onChange]);
+  }, [localCompareEnabled, onCompareChange, currentRange, comparisonType, onChange, selectedPreset]);
 
   // Handle comparison type change
   const handleComparisonTypeChange = useCallback(
@@ -124,10 +126,10 @@ export function AdvancedDateRangePicker({
       setComparisonType(type);
       if (localCompareEnabled) {
         const comparison = getComparisonPeriod(currentRange, type);
-        onChange(currentRange, comparison);
+        onChange(currentRange, comparison, selectedPreset);
       }
     },
-    [localCompareEnabled, currentRange, onChange]
+    [localCompareEnabled, currentRange, onChange, selectedPreset]
   );
 
   // Handle apply button

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { getOwnerId, getEmpresa, clearOwnerId, isAdminSession, isAdminViewing, setOwnerIdAsAdmin } from "@/lib/auth";
 import { getGargalos, getTopObjecoes } from "./actions";
 import { getKPIsDashboard, getDadosFunil } from "./actions-dashboard";
@@ -140,14 +141,16 @@ export default async function DashboardPage() {
       )}
 
       {/* Main Content - Dashboard Segmentado */}
-      <DashboardContent
-        ownerId={effectiveOwnerId}
-        initialKpis={kpis}
-        initialFunilVendas={funilVendas}
-        initialFunilSuporte={funilSuporte}
-        initialGargalos={gargalos}
-        initialObjecoes={objecoes}
-      />
+      <Suspense fallback={<div className="animate-pulse bg-gray-100 rounded-xl h-96" />}>
+        <DashboardContent
+          ownerId={effectiveOwnerId}
+          initialKpis={kpis}
+          initialFunilVendas={funilVendas}
+          initialFunilSuporte={funilSuporte}
+          initialGargalos={gargalos}
+          initialObjecoes={objecoes}
+        />
+      </Suspense>
 
       {/* Assistente IA */}
       <AssistenteIA ownerId={effectiveOwnerId} nomeEmpresa={empresa.nome_empresa} />
