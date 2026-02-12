@@ -34,7 +34,7 @@ export async function getAnalises(ownerId: string): Promise<AnaliseConversa[]> {
   const authorizedOwnerId = await requireAuth(ownerId);
   
   // Busca análises
-  const { data: analises, error: analisesError } = await supabaseAdmin
+  const { data: analisesRaw, error: analisesError } = await supabaseAdmin
     .from("analises_conversas")
     .select("*")
     .eq("owner", authorizedOwnerId)
@@ -45,9 +45,18 @@ export async function getAnalises(ownerId: string): Promise<AnaliseConversa[]> {
     return [];
   }
 
-  if (!analises || analises.length === 0) {
+  if (!analisesRaw || analisesRaw.length === 0) {
     return [];
   }
+
+  // Deduplica: mantém apenas a análise MAIS RECENTE por chatid
+  // Como a query já vem ordenada por created_at DESC, o primeiro de cada chatid é o mais recente
+  const chatidVisto = new Set<string>();
+  const analises = analisesRaw.filter((a) => {
+    if (chatidVisto.has(a.chatid)) return false;
+    chatidVisto.add(a.chatid);
+    return true;
+  });
 
   // Busca origens do tracking para os chatids das análises
   const chatids = analises.map(a => a.chatid);

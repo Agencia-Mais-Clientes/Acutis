@@ -14,6 +14,7 @@ import {
   X,
   Sparkles,
   Shield,
+  Cpu,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -59,6 +60,12 @@ const routes: RouteItem[] = [
     label: "Insights Agência",
     icon: Sparkles,
     href: "/dashboard/insights",
+    adminOnly: true,
+  },
+  {
+    label: "Consumo IA",
+    icon: Cpu,
+    href: "/dashboard/consumo-ia",
     adminOnly: true,
   },
   {

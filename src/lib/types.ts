@@ -74,11 +74,18 @@ export interface ObjecaoDetectada {
   evidencia: string;  // Texto exato ou paráfrase da fala do cliente
 }
 
+export interface TokenUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
 export interface Metrics {
   tempo_primeira_resposta_texto: string;
   tempo_medio_resposta_texto: string;
   data_entrada_lead?: string;    // Data de entrada do lead
   data_ultima_mensagem?: string; // Data da última mensagem analisada
+  token_usage?: TokenUsage;      // Tokens consumidos pela análise IA
 }
 
 export interface ResultadoIA {

@@ -170,7 +170,7 @@ export async function getActiveChatsWithoutAnalysisFallback(
   }
 
   // Busca mensagens a partir da data especificada ou padrão
-  const dataInicio = fromDate ? new Date(`${fromDate}T00:00:00Z`) : new Date("2025-11-01T00:00:00Z");
+  const dataInicio = fromDate ? new Date(`${fromDate}T00:00:00Z`) : new Date("2026-02-01T00:00:00Z");
   let query = supabaseAdmin
     .from("mensagens_clientes")
     .select("owner, chatid, eh_primeiro_contato_ads")
@@ -787,11 +787,17 @@ Responda APENAS com JSON válido, sem formatação markdown:
 
   // Usa retry com backoff para lidar com rate limits
   return retryWithBackoff(async () => {
-    const { text } = await generateText({
+    const { text, usage } = await generateText({
       model: google("gemini-2.5-flash-preview-09-2025"),
       system: systemPrompt,
       prompt: `Analise esta conversa: ${transcription.transcricao}`,
     });
+
+    // Log de tokens consumidos
+    const promptTokens = usage?.inputTokens ?? 0;
+    const completionTokens = usage?.outputTokens ?? 0;
+    const totalTokens = promptTokens + completionTokens;
+    console.log(`[ANALYZE] 🔢 Tokens: ${promptTokens} input + ${completionTokens} output = ${totalTokens} total (chat: ${transcription.chatid})`);
 
     // Limpa e parseia JSON
     const cleanJson = text
@@ -801,11 +807,16 @@ Responda APENAS com JSON válido, sem formatação markdown:
 
     const resultado = JSON.parse(cleanJson) as ResultadoIA;
 
-    // Injeta métricas com datas
+    // Injeta métricas com datas e token usage
     resultado.metrics = {
       ...transcription.metrics,
       data_entrada_lead: transcription.data_entrada_lead,
       data_ultima_mensagem: transcription.data_ultima_mensagem,
+      token_usage: {
+        prompt_tokens: promptTokens,
+        completion_tokens: completionTokens,
+        total_tokens: totalTokens,
+      },
     };
 
     return resultado;
@@ -989,8 +1000,8 @@ export async function processAllPendingChats(
       else if (result.status === "error") errors++;
       else skipped++;
 
-      // Rate limiting: espera 5 segundos entre cada análise (evita rate limit da API)
-      await sleep(5000);
+      // Rate limiting: espera 2 segundos entre cada análise
+      await sleep(2000);
     }
   }
 

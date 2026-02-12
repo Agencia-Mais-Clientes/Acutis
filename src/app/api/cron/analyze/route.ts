@@ -246,8 +246,8 @@ async function processCompanyChats(
       console.error(`[CRON ANALYZE] ❌ Erro no chat ${chat.chatid}:`, err);
     }
 
-    // Rate limiting: 5s entre análises (respeita Gemini API)
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    // Rate limiting: 2s entre análises
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
   console.log(`[CRON ANALYZE] Fase '${origemFilter}': ${processed} ok, ${skipped} pulados, ${errors} erros`);
