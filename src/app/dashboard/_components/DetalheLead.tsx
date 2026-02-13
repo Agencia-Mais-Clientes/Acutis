@@ -21,8 +21,8 @@ interface DetalheLeadProps {
 // Mapeia origem do tracking para texto de exibição
 function mapOrigemTracking(origem: string): string {
   switch (origem) {
-    case "facebook_ads": return "Meta";
-    case "instagram_ads": return "Meta";
+    case "facebook_ads": return "Facebook";
+    case "instagram_ads": return "Instagram";
     case "google_ads": return "Google";
     case "organico": return "Orgânico";
     default: return origem;
@@ -79,7 +79,10 @@ export function DetalheLead({ analise, open, onClose }: DetalheLeadProps) {
   // Origin badge colors
   const getOrigemStyle = (o: string) => {
     const ol = o.toLowerCase();
-    if (ol.includes("meta") || ol.includes("insta") || ol.includes("face")) {
+    if (ol.includes("insta")) {
+      return "bg-pink-500 text-white";
+    }
+    if (ol.includes("meta") || ol.includes("face")) {
       return "bg-blue-500 text-white";
     }
     if (ol.includes("google")) {

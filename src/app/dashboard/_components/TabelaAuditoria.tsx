@@ -20,6 +20,8 @@ export interface FiltrosIniciais {
   gargalo?: string;
   objecao?: string;
   tipo?: string;
+  origem?: string;
+  temperatura?: string;
   from?: string;
   to?: string;
   preset?: string;
@@ -36,8 +38,8 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
   const [filtroFunil, setFiltroFunil] = useState<string>(filtroInicial?.fase?.toUpperCase() || "ALL");
   const [filtroGargalo, setFiltroGargalo] = useState<string>(filtroInicial?.gargalo || "ALL");
   const [filtroObjecao, setFiltroObjecao] = useState<string>(filtroInicial?.objecao || "ALL");
-  const [filtroOrigem, setFiltroOrigem] = useState<string>("ALL");
-  const [filtroTemp, setFiltroTemp] = useState<string>("ALL");
+  const [filtroOrigem, setFiltroOrigem] = useState<string>(filtroInicial?.origem?.toUpperCase() || "ALL");
+  const [filtroTemp, setFiltroTemp] = useState<string>(filtroInicial?.temperatura?.toUpperCase() || "ALL");
   const [analiseSelecionada, setAnaliseSelecionada] = useState<AnaliseConversa | null>(null);
 
   // Date range state — inicializa do URL (from/to/preset) ou undefined (sem filtro)
@@ -140,7 +142,14 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
       // Origem filter (usa origem_tracking real, não inferência da IA)
       const origemTracking = a.origem_tracking?.toLowerCase() || null;
       let matchOrigem = filtroOrigem === "ALL";
-      if (filtroOrigem === "META") {
+      if (filtroOrigem === "TRAFEGO_PAGO") {
+        // Todo tráfego pago: Facebook + Instagram + Google
+        matchOrigem = origemTracking === "facebook_ads" || origemTracking === "instagram_ads" || origemTracking === "google_ads";
+      } else if (filtroOrigem === "FACEBOOK") {
+        matchOrigem = origemTracking === "facebook_ads";
+      } else if (filtroOrigem === "INSTAGRAM") {
+        matchOrigem = origemTracking === "instagram_ads";
+      } else if (filtroOrigem === "META") {
         // Meta = Facebook ou Instagram Ads
         matchOrigem = origemTracking === "facebook_ads" || origemTracking === "instagram_ads";
       } else if (filtroOrigem === "GOOGLE") {
@@ -231,7 +240,12 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
               <select
                 value={filtroTipo}
                 onChange={(e) => setFiltroTipo(e.target.value)}
-                className="bg-white text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer hover:bg-muted/50 transition-colors shadow-sm"
+                className={`text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer transition-colors shadow-sm ${
+                  filtroTipo !== "ALL"
+                    ? filtroTipo === "Vendas" ? "bg-emerald-50 border-emerald-200 text-emerald-700 font-medium"
+                    : "bg-indigo-50 border-indigo-200 text-indigo-700 font-medium"
+                    : "bg-white hover:bg-muted/50"
+                }`}
               >
                 <option value="ALL">Todos Tipos</option>
                 <option value="Vendas">💲 Vendas</option>
@@ -242,7 +256,11 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
               <select
                 value={filtroFunil}
                 onChange={(e) => setFiltroFunil(e.target.value)}
-                className="bg-white text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer hover:bg-muted/50 transition-colors shadow-sm"
+                className={`text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer transition-colors shadow-sm ${
+                  filtroFunil !== "ALL"
+                    ? "bg-violet-50 border-violet-200 text-violet-700 font-medium"
+                    : "bg-white hover:bg-muted/50"
+                }`}
               >
                 <option value="ALL">Todas Fases</option>
                 <option value="VENDIDO">✅ Convertido</option>
@@ -252,19 +270,23 @@ export function TabelaAuditoria({ analises, filtroInicial }: TabelaAuditoriaProp
                 <option value="RESOLVIDO">🔧 Resolvido</option>
               </select>
 
-              {/* Origem (Tráfego Pago) */}
+              {/* Origem (Tráfego) */}
               <select
                 value={filtroOrigem}
                 onChange={(e) => setFiltroOrigem(e.target.value)}
                 className={`text-xs border rounded-md px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer transition-colors shadow-sm ${
-                  filtroOrigem !== "ALL" 
-                    ? "bg-blue-50 border-blue-200 text-blue-700 font-medium" 
+                  filtroOrigem !== "ALL"
+                    ? "bg-blue-50 border-blue-200 text-blue-700 font-medium"
                     : "bg-white hover:bg-muted/50"
                 }`}
               >
                 <option value="ALL">📢 Todas Origens</option>
-                <option value="META">📘 Meta Ads</option>
+                <option value="TRAFEGO_PAGO">💰 Todo Tráfego Pago</option>
+                <option disabled>──────────</option>
+                <option value="FACEBOOK">📘 Facebook Ads</option>
+                <option value="INSTAGRAM">📸 Instagram Ads</option>
                 <option value="GOOGLE">🔍 Google Ads</option>
+                <option disabled>──────────</option>
                 <option value="INDICACAO">👥 Indicação</option>
                 <option value="ORGANICO">🌱 Orgânico</option>
               </select>
@@ -492,24 +514,21 @@ function mapOrigemTracking(origem: string): string {
 
 function OrigemBadge({ origem }: { origem: string }) {
   const o = origem.toLowerCase();
-  // Facebook ou Instagram (Meta)
-  if (o === "facebook" || o === "facebook_ads" || o.includes("insta")) {
-    const label = o.includes("insta") ? "INSTAGRAM" : "FACEBOOK";
-    return <span className="text-[9px] font-bold text-blue-700 border border-blue-200 bg-blue-50 px-1.5 rounded">{label}</span>;
+  if (o === "facebook" || o === "facebook_ads") {
+    return <span className="text-[9px] font-bold text-blue-700 border border-blue-200 bg-blue-50 px-1.5 rounded">FACEBOOK</span>;
   }
-  // Google Ads
+  if (o.includes("insta")) {
+    return <span className="text-[9px] font-bold text-pink-700 border border-pink-200 bg-pink-50 px-1.5 rounded">INSTAGRAM</span>;
+  }
   if (o === "google" || o === "google_ads") {
     return <span className="text-[9px] font-bold text-orange-700 border border-orange-200 bg-orange-50 px-1.5 rounded">GOOGLE</span>;
   }
-  // Meta (genérico)
   if (o.includes("meta") || o.includes("face")) {
     return <span className="text-[9px] font-bold text-blue-700 border border-blue-200 bg-blue-50 px-1.5 rounded">META</span>;
   }
-  // Indicação (IA)
   if (o.includes("indica")) {
     return <span className="text-[9px] font-bold text-purple-700 border border-purple-200 bg-purple-50 px-1.5 rounded">INDICAÇÃO</span>;
   }
-  // Orgânico (padrão)
   return <span className="text-[9px] font-bold text-gray-600 border border-gray-200 bg-gray-50 px-1.5 rounded">ORGÂNICO</span>;
 }
 
@@ -547,26 +566,26 @@ function TemperaturaWidget({ temp }: { temp: string }) {
         <div className="w-1 h-1.5 bg-red-500 rounded-sm" />
         <div className="w-1 h-2 bg-red-500 rounded-sm" />
         <div className="w-1 h-3 bg-red-500 rounded-sm" />
-        <span className="ml-1 text-[9px] font-bold text-red-400">ALTA</span>
+        <span className="ml-1 text-[9px] font-bold text-red-500">ALTA</span>
       </div>
     );
   }
   if (t.includes("morno")) {
     return (
       <div className="flex gap-0.5 items-end h-3">
-        <div className="w-1 h-1.5 bg-yellow-500 rounded-sm" />
-        <div className="w-1 h-2 bg-yellow-500 rounded-sm" />
-        <div className="w-1 h-3 bg-gray-700 rounded-sm" />
-        <span className="ml-1 text-[9px] font-bold text-yellow-400">MÉDIA</span>
+        <div className="w-1 h-1.5 bg-amber-500 rounded-sm" />
+        <div className="w-1 h-2 bg-amber-500 rounded-sm" />
+        <div className="w-1 h-3 bg-gray-200 rounded-sm" />
+        <span className="ml-1 text-[9px] font-bold text-amber-500">MÉDIA</span>
       </div>
     );
   }
   return (
     <div className="flex gap-0.5 items-end h-3">
       <div className="w-1 h-1.5 bg-blue-500 rounded-sm" />
-      <div className="w-1 h-2 bg-gray-700 rounded-sm" />
-      <div className="w-1 h-3 bg-gray-700 rounded-sm" />
-      <span className="ml-1 text-[9px] font-bold text-blue-400">BAIXA</span>
+      <div className="w-1 h-2 bg-gray-200 rounded-sm" />
+      <div className="w-1 h-3 bg-gray-200 rounded-sm" />
+      <span className="ml-1 text-[9px] font-bold text-blue-500">BAIXA</span>
     </div>
   );
 }
