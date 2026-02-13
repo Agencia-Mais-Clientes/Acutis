@@ -19,7 +19,7 @@ import {
 import { type DateRange, type PresetKey, getPresets } from "@/lib/date-utils";
 import { getKPIsDashboard, getDadosFunil } from "../actions-dashboard";
 import { getGargalos, getTopObjecoes } from "../actions";
-import { Loader2 } from "lucide-react";
+import { Loader2, CalendarDays } from "lucide-react";
 
 type Tab = "vendas" | "suporte";
 
@@ -169,6 +169,13 @@ export function DashboardContent({
     setCompareEnabled(enabled);
   }, []);
 
+  // Label do período ativo
+  const periodoLabel = useMemo(() => {
+    if (!dateRange) return null;
+    const fmt = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+    return `${fmt(dateRange.from)} – ${fmt(dateRange.to)}`;
+  }, [dateRange]);
+
   return (
     <div className="space-y-6">
       {/* Filtros: Tabs + Date */}
@@ -179,8 +186,14 @@ export function DashboardContent({
           contadorVendas={kpis.vendas.totalLeads}
           contadorSuporte={kpis.suporte.totalTickets}
         />
-        
+
         <div className="flex items-center gap-3">
+          {periodoLabel && (
+            <div className="hidden md:flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+              <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+              <span className="font-medium">{periodoLabel}</span>
+            </div>
+          )}
           {isPending && (
             <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
           )}
@@ -202,21 +215,22 @@ export function DashboardContent({
             <KPICardsVendas kpis={kpis.vendas} />
           </SlideUp>
 
-          {/* Funil + Gargalos lado a lado */}
+          {/* Funil Destaque */}
           <SlideUp delay={0.15}>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <FunilPersonalizado
-                dados={funilVendas}
-                titulo="Funil de Vendas"
-                dateRange={dateRange}
-                selectedPreset={selectedPreset}
-              />
-              <MonitorGargalos gargalos={gargalos} totalLeads={kpis.vendas.totalLeads} dateRange={dateRange} selectedPreset={selectedPreset} />
-            </div>
+            <FunilPersonalizado
+              dados={funilVendas}
+              titulo="Funil de Vendas"
+              dateRange={dateRange}
+              selectedPreset={selectedPreset}
+            />
           </SlideUp>
 
+          {/* Gargalos + Objeções lado a lado */}
           <SlideUp delay={0.2}>
-            <TopObjecoes objecoes={objecoes} dateRange={dateRange} selectedPreset={selectedPreset} />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <MonitorGargalos gargalos={gargalos} totalLeads={kpis.vendas.totalLeads} dateRange={dateRange} selectedPreset={selectedPreset} />
+              <TopObjecoes objecoes={objecoes} dateRange={dateRange} selectedPreset={selectedPreset} />
+            </div>
           </SlideUp>
         </div>
       ) : (
@@ -225,6 +239,7 @@ export function DashboardContent({
             <KPICardsSuporte kpis={kpis.suporte} />
           </SlideUp>
 
+          {/* Funil Destaque */}
           <SlideUp delay={0.15}>
             <FunilPersonalizado
               dados={funilSuporte}
@@ -235,19 +250,7 @@ export function DashboardContent({
           </SlideUp>
 
           <SlideUp delay={0.2}>
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Métricas de Suporte</h3>
-              <p className="text-gray-500 text-sm">
-                Tempo médio de resposta: <strong className="text-gray-900">{kpis.suporte.tempoMedioResposta}</strong>
-              </p>
-              <p className="text-gray-500 text-sm mt-2">
-                Taxa de resolução: <strong className="text-emerald-600">
-                  {kpis.suporte.totalTickets > 0
-                    ? Math.round((kpis.suporte.ticketsResolvidos / kpis.suporte.totalTickets) * 100)
-                    : 0}%
-                </strong>
-              </p>
-            </div>
+            <MonitorGargalos gargalos={gargalos} totalLeads={kpis.suporte.totalTickets} dateRange={dateRange} selectedPreset={selectedPreset} />
           </SlideUp>
         </div>
       )}

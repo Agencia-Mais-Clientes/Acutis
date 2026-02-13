@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { DadosFunil } from "@/lib/types";
 import { type DateRange, type PresetKey } from "@/lib/date-utils";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, XCircle } from "lucide-react";
 
 interface FunilPersonalizadoProps {
   dados: DadosFunil[];
@@ -12,7 +13,6 @@ interface FunilPersonalizadoProps {
   selectedPreset?: PresetKey | null;
 }
 
-// Mapeia nome da etapa para key exata de FUNIL_FASE (mesmo critério de getDadosFunil)
 function getFilterParam(etapaNome: string): string {
   const nome = etapaNome.toLowerCase();
   if (nome.includes("lead") || nome.includes("recebido") || nome.includes("ticket")) return "todos";
@@ -25,8 +25,31 @@ function getFilterParam(etapaNome: string): string {
   return "todos";
 }
 
-export function FunilPersonalizado({ dados, titulo = "Funil de Conversão", dateRange, selectedPreset }: FunilPersonalizadoProps) {
-  // Preserva from/to/preset do dashboard para a página de análises
+const FINAL_WIDTH_PCT = 30;
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
+};
+
+const rowVariants = {
+  hidden: { opacity: 0, x: -20 },
+  show: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.4, ease: "easeOut" as const },
+  },
+};
+
+export function FunilPersonalizado({
+  dados,
+  titulo = "Funil de Conversão",
+  dateRange,
+  selectedPreset,
+}: FunilPersonalizadoProps) {
   const buildHref = (filterParam: string) => {
     const params = new URLSearchParams();
     if (filterParam !== "todos") params.set("fase", filterParam);
@@ -36,6 +59,7 @@ export function FunilPersonalizado({ dados, titulo = "Funil de Conversão", date
     const qs = params.toString();
     return `/dashboard/analises${qs ? `?${qs}` : ""}`;
   };
+
   if (!dados || dados.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
@@ -45,134 +69,147 @@ export function FunilPersonalizado({ dados, titulo = "Funil de Conversão", date
     );
   }
 
-  // Ordena e filtra etapa "Perdido" para não aparecer no funil visual
   const dadosOrdenados = [...dados]
     .sort((a, b) => a.etapa.ordem - b.etapa.ordem)
-    .filter(d => !d.etapa.nome.toLowerCase().includes("perdido"));
-  
-  const perdidos = dados.find(d => d.etapa.nome.toLowerCase().includes("perdido"));
-  const total = dadosOrdenados[0]?.quantidade || 1;
+    .filter((d) => !d.etapa.nome.toLowerCase().includes("perdido"));
 
-  // Calcula taxa de conversão geral (Convertido / Total)
-  const convertidos = dadosOrdenados.find(d => 
-    d.etapa.nome.toLowerCase().includes("convertido") || 
-    d.etapa.nome.toLowerCase().includes("resolvido")
+  const perdidos = dados.find((d) => d.etapa.nome.toLowerCase().includes("perdido"));
+  const total = dadosOrdenados[0]?.quantidade || 1;
+  const n = dadosOrdenados.length;
+
+  const convertidos = dadosOrdenados.find(
+    (d) =>
+      d.etapa.nome.toLowerCase().includes("convertido") ||
+      d.etapa.nome.toLowerCase().includes("resolvido")
   );
-  const taxaConversao = total > 0 && convertidos 
-    ? Math.round((convertidos.quantidade / total) * 100) 
-    : 0;
+  const taxaConversao =
+    total > 0 && convertidos ? Math.round((convertidos.quantidade / total) * 100) : 0;
+
+  const getStageWidth = (index: number) => {
+    if (n <= 1) return 100;
+    return 100 - (index * (100 - FINAL_WIDTH_PCT)) / (n - 1);
+  };
+
+  const BAND_HEIGHT = 52;
+  const GAP = 5;
+  const lastStageCor = dadosOrdenados[n - 1]?.etapa.cor || "#6366f1";
+  const lastStageWidth = getStageWidth(n - 1);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-      {/* Header compacto */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <h3 className="text-base font-semibold text-gray-900">{titulo}</h3>
-        <div className="flex items-center gap-1.5 text-xs">
-          <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-          <span className="text-gray-500">Conversão:</span>
-          <span className="font-bold text-emerald-600">{taxaConversao}%</span>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
+          <TrendingUp className="h-4 w-4 text-emerald-600" />
+          <span className="text-sm font-bold text-emerald-700">{taxaConversao}%</span>
+          <span className="text-xs text-emerald-600">conversão</span>
         </div>
       </div>
-      
-      {/* Funil Horizontal Compacto - Clicável */}
-      <div className="flex items-stretch gap-1 mb-3 overflow-x-auto pb-2 -mx-2 px-2 md:overflow-visible md:pb-0 md:px-0 scrollbar-hide">
+
+      {/* Funnel layout: shape left + labels right */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+      >
         {dadosOrdenados.map((item, index) => {
-          const isLast = index === dadosOrdenados.length - 1;
+          const isFirst = index === 0;
           const filterParam = getFilterParam(item.etapa.nome);
           const href = buildHref(filterParam);
+          const bandWidth = getStageWidth(index);
 
           return (
-            <Link 
-              key={item.etapa.id} 
-              href={href}
-              className="flex-1 relative group cursor-pointer min-w-[100px] md:min-w-0 flex-shrink-0"
-              title={`Ver ${item.quantidade} leads em "${item.etapa.nome}"`}
-            >
-              {/* Barra com arrow shape */}
-              <div 
-                className="relative h-14 flex items-center justify-center transition-all duration-200 group-hover:scale-[1.03] group-hover:brightness-110"
-                style={{
-                  background: `linear-gradient(135deg, ${item.etapa.cor}ee, ${item.etapa.cor})`,
-                  clipPath: isLast 
-                    ? 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 8px 50%)'
-                    : 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%, 8px 50%)',
-                  marginLeft: index === 0 ? 0 : '-8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                }}
+            <motion.div key={item.etapa.id} variants={rowVariants}>
+              <Link
+                href={href}
+                className="group flex items-center gap-0 transition-colors rounded-lg hover:bg-gray-50/80"
+                title={`Ver ${item.quantidade} leads em "${item.etapa.nome}"`}
+                style={{ marginBottom: `${GAP}px` }}
               >
-                {/* Conteúdo */}
-                <div className="text-center px-2 z-10">
-                  <div className="text-white font-bold text-lg leading-none">
-                    {item.quantidade}
+                {/* Funnel band area */}
+                <div className="w-[45%] sm:w-[50%] flex justify-center shrink-0">
+                  <div
+                    className="rounded-lg transition-all duration-200 group-hover:shadow-lg"
+                    style={{
+                      width: `${bandWidth}%`,
+                      height: `${BAND_HEIGHT}px`,
+                      background: `linear-gradient(135deg, ${item.etapa.cor}ee, ${item.etapa.cor})`,
+                      boxShadow: `0 2px 8px ${item.etapa.cor}25`,
+                    }}
+                  />
+                </div>
+
+                {/* Connecting line */}
+                <div className="w-6 sm:w-10 flex items-center shrink-0">
+                  <div
+                    className="w-full border-t-2 border-dashed"
+                    style={{ borderColor: `${item.etapa.cor}40` }}
+                  />
+                </div>
+
+                {/* Label */}
+                <div className="flex-1 flex items-center justify-between min-w-0 pr-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: item.etapa.cor }}
+                    />
+                    <span className="text-sm font-semibold text-gray-700 truncate">
+                      {item.etapa.nome}
+                    </span>
                   </div>
-                  <div className="text-white/80 text-[10px] font-medium leading-tight mt-0.5 truncate max-w-[60px]">
-                    {item.etapa.nome}
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <span
+                      className="text-2xl font-extrabold"
+                      style={{ color: item.etapa.cor }}
+                    >
+                      {item.quantidade}
+                    </span>
+                    {!isFirst && (
+                      <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                        {item.percentual}%
+                      </span>
+                    )}
                   </div>
                 </div>
-                
-                {/* Brilho */}
-                <div 
-                  className="absolute inset-0 opacity-20 pointer-events-none"
-                  style={{
-                    background: 'linear-gradient(180deg, rgba(255,255,255,0.5) 0%, transparent 50%)',
-                    clipPath: 'inherit',
-                  }}
-                />
-              </div>
-              
-              {/* Taxa de conversão entre etapas */}
-              {!isLast && (
-                <div className="absolute -right-1 top-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="bg-gray-900 text-white text-[9px] px-1.5 py-0.5 rounded font-medium shadow-lg">
-                    {dadosOrdenados[index + 1] && item.quantidade > 0
-                      ? Math.round((dadosOrdenados[index + 1].quantidade / item.quantidade) * 100)
-                      : 0}%
-                  </div>
-                </div>
-              )}
-            </Link>
+              </Link>
+            </motion.div>
           );
         })}
-      </div>
 
-      {/* Legenda compacta - Clicável */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-3 border-t border-gray-100 gap-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          {dadosOrdenados.map((item) => {
-            const filterParam = getFilterParam(item.etapa.nome);
-            const href = buildHref(filterParam);
-            
-            return (
-              <Link 
-                key={item.etapa.id} 
-                href={href}
-                className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
-              >
-                <div 
-                  className="w-2 h-2 rounded-full" 
-                  style={{ backgroundColor: item.etapa.cor }}
-                />
-                <span className="text-[11px] text-gray-500">
-                  {item.etapa.nome}: <strong className="text-gray-700">{item.percentual}%</strong>
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-        
-        {/* Perdidos - Clicável */}
-        {perdidos && perdidos.quantidade > 0 && (
-          <Link 
-            href={buildHref("PERDIDO")}
-            className="flex items-center gap-1.5 text-[11px] hover:opacity-70 transition-opacity"
-          >
-            <div className="w-2 h-2 rounded-full bg-red-500" />
-            <span className="text-gray-500">
-              Perdidos: <strong className="text-red-600">{perdidos.quantidade}</strong>
+        {/* Funnel tip */}
+        <motion.div variants={rowVariants} className="flex">
+          <div className="w-[45%] sm:w-[50%] flex justify-center shrink-0">
+            <div
+              style={{
+                width: `${lastStageWidth}%`,
+                height: "44px",
+                clipPath: "polygon(0% 0%, 100% 0%, 50% 100%)",
+                background: `linear-gradient(180deg, ${lastStageCor}ee, ${lastStageCor}55)`,
+              }}
+            />
+          </div>
+        </motion.div>
+      </motion.div>
+
+      {/* Perdidos */}
+      {perdidos && perdidos.quantidade > 0 && (
+        <Link
+          href={buildHref("PERDIDO")}
+          className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-gray-100 group hover:opacity-80 transition-opacity"
+        >
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-red-50 rounded-xl border border-red-100 shadow-sm">
+            <XCircle className="h-4 w-4 text-red-500" />
+            <span className="text-sm font-bold text-red-700">
+              {perdidos.quantidade} Perdidos
             </span>
-          </Link>
-        )}
-      </div>
+            <span className="text-xs text-red-500 font-semibold">
+              ({total > 0 ? Math.round((perdidos.quantidade / total) * 100) : 0}%)
+            </span>
+          </div>
+        </Link>
+      )}
     </div>
   );
 }
