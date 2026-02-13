@@ -137,6 +137,103 @@ const ENDPOINTS = [
   },
 ];
 
+// ========================================
+// ENDPOINTS DE ALERTAS EM TEMPO REAL
+// ========================================
+const ALERT_ENDPOINTS = [
+  {
+    id: "trigger-analysis-post",
+    method: "POST",
+    path: "/api/trigger-analysis",
+    title: "Enfileirar Chat para Alerta",
+    description: "Chamado pelo N8N a cada mensagem recebida. Faz upsert na fila de debounce com agendado_para = now + 60s. Se o chat já está na fila, apenas reseta o timer.",
+    params: [
+      { name: "chatid", type: "string", required: true, description: "ID do chat no WhatsApp (ex: 5511999999999@s.whatsapp.net). Se não tiver @, é adicionado automaticamente." },
+      { name: "owner", type: "string", required: true, description: "Número do owner da empresa" },
+    ],
+    examples: [
+      {
+        title: "Enfileirar chat",
+        code: `curl -X POST "${BASE_URL}/api/trigger-analysis" \\
+  -H "Content-Type: application/json" \\
+  -d '{"chatid": "5511999999999@s.whatsapp.net", "owner": "5511940820844"}'`,
+      },
+      {
+        title: "Sem @s.whatsapp.net (normalizado automaticamente)",
+        code: `curl -X POST "${BASE_URL}/api/trigger-analysis" \\
+  -H "Content-Type: application/json" \\
+  -d '{"chatid": "5511999999999", "owner": "5511940820844"}'`,
+      },
+    ],
+    response: `{
+  "success": true,
+  "action": "queued"
+}`,
+  },
+  {
+    id: "trigger-analysis-get",
+    method: "GET",
+    path: "/api/trigger-analysis",
+    title: "Health Check da Fila",
+    description: "Retorna o número de chats pendentes na fila de alertas.",
+    params: [],
+    examples: [
+      {
+        title: "Verificar fila",
+        code: `curl "${BASE_URL}/api/trigger-analysis"`,
+      },
+    ],
+    response: `{
+  "success": true,
+  "message": "Trigger Analysis API is running",
+  "pendingCount": 3
+}`,
+  },
+  {
+    id: "process-pending-post",
+    method: "POST",
+    path: "/api/process-pending",
+    title: "Processar Alertas Pendentes",
+    description: "Worker chamado pelo N8N a cada 1 minuto. Busca até 5 chats prontos (debounce expirado), roda mini-análise Gemini e envia alerta WhatsApp ao gestor se necessário.",
+    params: [],
+    examples: [
+      {
+        title: "Processar pendentes",
+        code: `curl -X POST "${BASE_URL}/api/process-pending" \\
+  -H "Content-Type: application/json"`,
+      },
+    ],
+    response: `{
+  "success": true,
+  "processed": 2,
+  "alerted": 1,
+  "results": [
+    { "chatid": "5511999999999@s.whatsapp.net", "alerted": true },
+    { "chatid": "5511888888888@s.whatsapp.net", "alerted": false }
+  ]
+}`,
+  },
+  {
+    id: "process-pending-get",
+    method: "GET",
+    path: "/api/process-pending",
+    title: "Health Check do Worker",
+    description: "Retorna o número de chats aguardando processamento.",
+    params: [],
+    examples: [
+      {
+        title: "Verificar status",
+        code: `curl "${BASE_URL}/api/process-pending"`,
+      },
+    ],
+    response: `{
+  "success": true,
+  "message": "Process Pending API is running",
+  "pendingCount": 0
+}`,
+  },
+];
+
 const STATUS_CODES = [
   { code: 200, label: "OK", description: "Requisição processada com sucesso", color: "#22c55e" },
   { code: 401, label: "Unauthorized", description: "Token de autenticação inválido ou ausente", color: "#f59e0b" },
@@ -461,6 +558,9 @@ export default function DocsPage() {
             <a href="#n8n" style={{ color: "#9ca3af", textDecoration: "none", fontSize: "14px", fontWeight: 500 }}>
               N8N
             </a>
+            <a href="#alertas" style={{ color: "#9ca3af", textDecoration: "none", fontSize: "14px", fontWeight: 500 }}>
+              Alertas
+            </a>
             <a href="#funcionamento" style={{ color: "#9ca3af", textDecoration: "none", fontSize: "14px", fontWeight: 500 }}>
               Como Funciona
             </a>
@@ -701,6 +801,235 @@ Body:
         </div>
       </section>
 
+      {/* Alertas em Tempo Real */}
+      <section id="alertas" style={{
+        padding: "60px 0",
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        background: "rgba(239, 68, 68, 0.02)",
+      }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 24px" }}>
+          <div style={{
+            display: "inline-block",
+            background: "rgba(239, 68, 68, 0.1)",
+            color: "#ef4444",
+            padding: "6px 14px",
+            borderRadius: "6px",
+            fontSize: "12px",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "1.5px",
+            marginBottom: "20px",
+          }}>
+            Novo
+          </div>
+          <h2 style={{ fontSize: "28px", fontWeight: 700, marginBottom: "8px", display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ fontSize: "24px" }}>🚨</span> Alertas em Tempo Real
+          </h2>
+          <p style={{ color: "#9ca3af", fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
+            Sistema de alertas automáticos via WhatsApp. Detecta situações críticas nos chats (lead sem resposta, tom agressivo, venda sendo perdida) e notifica os gestores em ~2 minutos.
+          </p>
+
+          {/* Architecture Diagram */}
+          <div style={{
+            background: "#111827",
+            borderRadius: "16px",
+            border: "1px solid rgba(255,255,255,0.08)",
+            padding: "32px",
+            marginBottom: "32px",
+            textAlign: "center",
+          }}>
+            <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "24px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "1px" }}>
+              Fluxo de Alertas
+            </h3>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "16px",
+              flexWrap: "wrap",
+            }}>
+              <div style={{
+                background: "rgba(34, 197, 94, 0.1)",
+                border: "2px solid rgba(34, 197, 94, 0.3)",
+                borderRadius: "12px",
+                padding: "16px 20px",
+              }}>
+                <div style={{ fontSize: "20px", marginBottom: "4px" }}>💬</div>
+                <div style={{ fontSize: "12px", fontWeight: 600 }}>WhatsApp</div>
+                <div style={{ fontSize: "10px", color: "#6b7280" }}>Mensagem chega</div>
+              </div>
+              <div style={{ color: "#6b7280", fontSize: "18px" }}>→</div>
+              <div style={{
+                background: "rgba(14, 165, 233, 0.1)",
+                border: "2px solid rgba(14, 165, 233, 0.3)",
+                borderRadius: "12px",
+                padding: "16px 20px",
+              }}>
+                <div style={{ fontSize: "20px", marginBottom: "4px" }}>🔄</div>
+                <div style={{ fontSize: "12px", fontWeight: 600 }}>N8N</div>
+                <div style={{ fontSize: "10px", color: "#6b7280" }}>POST /trigger-analysis</div>
+              </div>
+              <div style={{ color: "#6b7280", fontSize: "18px" }}>→</div>
+              <div style={{
+                background: "rgba(245, 158, 11, 0.1)",
+                border: "2px solid rgba(245, 158, 11, 0.3)",
+                borderRadius: "12px",
+                padding: "16px 20px",
+              }}>
+                <div style={{ fontSize: "20px", marginBottom: "4px" }}>⏳</div>
+                <div style={{ fontSize: "12px", fontWeight: 600 }}>Debounce 60s</div>
+                <div style={{ fontSize: "10px", color: "#6b7280" }}>analise_pendente</div>
+              </div>
+              <div style={{ color: "#6b7280", fontSize: "18px" }}>→</div>
+              <div style={{
+                background: "rgba(139, 92, 246, 0.1)",
+                border: "2px solid rgba(139, 92, 246, 0.3)",
+                borderRadius: "12px",
+                padding: "16px 20px",
+              }}>
+                <div style={{ fontSize: "20px", marginBottom: "4px" }}>🧠</div>
+                <div style={{ fontSize: "12px", fontWeight: 600 }}>Mini-Análise</div>
+                <div style={{ fontSize: "10px", color: "#6b7280" }}>Gemini Flash</div>
+              </div>
+              <div style={{ color: "#6b7280", fontSize: "18px" }}>→</div>
+              <div style={{
+                background: "rgba(239, 68, 68, 0.1)",
+                border: "2px solid rgba(239, 68, 68, 0.3)",
+                borderRadius: "12px",
+                padding: "16px 20px",
+              }}>
+                <div style={{ fontSize: "20px", marginBottom: "4px" }}>🚨</div>
+                <div style={{ fontSize: "12px", fontWeight: 600 }}>Alerta WhatsApp</div>
+                <div style={{ fontSize: "10px", color: "#6b7280" }}>Para o gestor</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Alert Types */}
+          <div style={{
+            background: "#111827",
+            borderRadius: "16px",
+            border: "1px solid rgba(255,255,255,0.08)",
+            padding: "28px",
+            marginBottom: "32px",
+          }}>
+            <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span>🎯</span> Tipos de Alerta Detectados
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+              {[
+                { emoji: "⏰", label: "Sem Resposta", desc: "Cliente aguardando >30min no expediente", severity: "critical" },
+                { emoji: "😡", label: "Tom Agressivo", desc: "Atendente rude ou impaciente", severity: "critical" },
+                { emoji: "💰", label: "Objeção de Preço", desc: "Preço não contornado pelo atendente", severity: "warning" },
+                { emoji: "📉", label: "Interesse Caindo", desc: "Lead dando sinais de desistência", severity: "warning" },
+                { emoji: "❌", label: "Venda Perdida", desc: "Oportunidade sem próximo passo", severity: "critical" },
+              ].map((t) => (
+                <div key={t.label} style={{
+                  background: "rgba(255,255,255,0.03)",
+                  borderRadius: "10px",
+                  padding: "16px",
+                  border: `1px solid ${t.severity === "critical" ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)"}`,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                    <span style={{ fontSize: "16px" }}>{t.emoji}</span>
+                    <span style={{ fontSize: "13px", fontWeight: 600 }}>{t.label}</span>
+                    <span style={{
+                      fontSize: "10px",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      background: t.severity === "critical" ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)",
+                      color: t.severity === "critical" ? "#ef4444" : "#f59e0b",
+                      fontWeight: 600,
+                      marginLeft: "auto",
+                    }}>
+                      {t.severity}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#6b7280" }}>{t.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Alert Endpoints */}
+          <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "16px", color: "white" }}>Endpoints de Alertas</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "32px" }}>
+            {ALERT_ENDPOINTS.map((ep) => (
+              <EndpointCard key={ep.id} endpoint={ep} />
+            ))}
+          </div>
+
+          {/* N8N Config for Alerts */}
+          <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "16px", color: "white" }}>Configuração N8N — Alertas</h3>
+          <p style={{ color: "#9ca3af", fontSize: "14px", marginBottom: "24px" }}>
+            Dois novos nós no N8N: um HTTP Request após salvar mensagem e um Schedule Trigger a cada 1 minuto.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "32px" }}>
+            <div>
+              <h4 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "12px", color: "#9ca3af" }}>Nó 1: HTTP Request (após Save Message)</h4>
+              <CodeBlock
+                code={`Method: POST
+URL: ${BASE_URL}/api/trigger-analysis
+Content-Type: application/json
+
+Body (JSON):
+{
+  "chatid": "{{ $json.chatid }}",
+  "owner": "{{ $json.owner }}"
+}
+
+// Coloque APÓS o nó que salva a mensagem
+// no fluxo existente do N8N`}
+                title="trigger-analysis"
+              />
+            </div>
+            <div>
+              <h4 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "12px", color: "#9ca3af" }}>Nó 2: Schedule Trigger + HTTP Request</h4>
+              <CodeBlock
+                code={`// Schedule Trigger
+Tipo: Cron
+Expressão: * * * * *
+(a cada 1 minuto)
+
+// HTTP Request
+Method: POST
+URL: ${BASE_URL}/api/process-pending
+Content-Type: application/json
+Timeout: 60000 (60s)
+
+// Workflow separado do principal`}
+                title="process-pending"
+              />
+            </div>
+          </div>
+
+          {/* Requisitos */}
+          <div style={{
+            background: "#111827",
+            borderRadius: "16px",
+            border: "1px solid rgba(245,158,11,0.2)",
+            padding: "28px",
+          }}>
+            <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span>⚠️</span> Pré-requisitos para Alertas
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {[
+                "Gestores cadastrados na tabela gestores com telefone preenchido e ativo = true",
+                "Gestores vinculados às empresas via tabela gestor_empresa",
+                "Empresa com instance_token configurado em config_empresas",
+                "Migration 20260212000018_create_analise_pendente.sql aplicada no Supabase",
+              ].map((req, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px" }}>
+                  <span style={{ color: "#f59e0b", fontSize: "16px" }}>•</span>
+                  <span style={{ color: "#9ca3af" }}>{req}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Funcionamento Interno */}
       <section id="funcionamento" style={{ padding: "60px 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 24px" }}>
@@ -852,8 +1181,11 @@ Body:
                     { table: "mensagens_clientes", desc: "Mensagens recebidas do WhatsApp" },
                     { table: "analises_conversas", desc: "Análises geradas pela IA" },
                     { table: "lead_tracking", desc: "Rastreamento de origem dos leads (pago/orgânico)" },
-                  ].map((t, i) => (
-                    <tr key={i} style={{ borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                    { table: "analise_pendente", desc: "Fila de debounce para alertas em tempo real" },
+                    { table: "gestores", desc: "Gestores cadastrados (recebem alertas WhatsApp)" },
+                    { table: "gestor_empresa", desc: "Vínculo N:N entre gestores e empresas" },
+                  ].map((t, i, arr) => (
+                    <tr key={i} style={{ borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
                       <td style={{ padding: "12px 16px" }}>
                         <code style={{ color: "#22c55e", fontFamily: "'JetBrains Mono', monospace", fontSize: "13px" }}>{t.table}</code>
                       </td>

@@ -111,6 +111,47 @@ export async function getAllInstances(): Promise<InstanceInfo[]> {
  * Verifica o status de uma instância do WhatsApp
  * @param instanceToken Token único da instância
  */
+/**
+ * Envia mensagem de texto via WhatsApp usando o token da instância
+ * @param phoneNumber - Número do destinatário (ex: "5511999999999")
+ * @param text - Texto da mensagem
+ * @param instanceToken - Token da instância UazAPI da empresa
+ */
+export async function sendWhatsAppMessage(
+  phoneNumber: string,
+  text: string,
+  instanceToken: string
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${UAZAPI_BASE_URL}/message/text`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "token": instanceToken,
+      },
+      body: JSON.stringify({
+        number: phoneNumber,
+        text,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`[UAZAPI] Erro ao enviar mensagem: ${response.status}`);
+      return false;
+    }
+
+    console.log(`[UAZAPI] Mensagem enviada para ${phoneNumber}`);
+    return true;
+  } catch (error) {
+    console.error("[UAZAPI] Erro ao enviar mensagem:", error);
+    return false;
+  }
+}
+
+/**
+ * Verifica o status de uma instância do WhatsApp
+ * @param instanceToken Token único da instância
+ */
 export async function getInstanceStatus(instanceToken: string | null): Promise<InstanceStatus> {
   // Se não tem token, retorna como desconhecido
   if (!instanceToken) {
