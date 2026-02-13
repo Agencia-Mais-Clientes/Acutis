@@ -5,6 +5,20 @@ import { requireAuth } from "@/lib/auth-utils";
 import { isAdminSession } from "@/lib/auth";
 import type { TokenUsage } from "@/lib/types";
 
+// Gemini 2.5 Flash — preço por 1M tokens (USD)
+const PRECO_INPUT_POR_1M = 0.30;
+const PRECO_OUTPUT_POR_1M = 2.50;
+// Câmbio USD → BRL (atualizar conforme necessário)
+const CAMBIO_USD_BRL = 5.80;
+
+function calcularCusto(inputTokens: number, outputTokens: number) {
+  const custoUSD =
+    (inputTokens / 1_000_000) * PRECO_INPUT_POR_1M +
+    (outputTokens / 1_000_000) * PRECO_OUTPUT_POR_1M;
+  const custoBRL = custoUSD * CAMBIO_USD_BRL;
+  return { custoUSD, custoBRL };
+}
+
 export interface TokenStats {
   totalAnalises: number;
   totalTokens: number;
@@ -15,6 +29,11 @@ export interface TokenStats {
   mediaOutput: number;
   analisesComToken: number;
   analisesSemToken: number;
+  custoTotalUSD: number;
+  custoTotalBRL: number;
+  custoInputUSD: number;
+  custoOutputUSD: number;
+  cambioBRL: number;
   porEmpresa: EmpresaTokenStats[];
   historicoDiario: DailyTokenStats[];
 }
@@ -24,7 +43,11 @@ export interface EmpresaTokenStats {
   empresa: string;
   totalAnalises: number;
   totalTokens: number;
+  totalInput: number;
+  totalOutput: number;
   mediaTokens: number;
+  custoUSD: number;
+  custoBRL: number;
 }
 
 export interface DailyTokenStats {
@@ -33,6 +56,8 @@ export interface DailyTokenStats {
   totalTokens: number;
   totalInput: number;
   totalOutput: number;
+  custoUSD: number;
+  custoBRL: number;
 }
 
 /**
@@ -84,10 +109,10 @@ export async function getTokenStats(
   let analisesComToken = 0;
 
   // Agrupamento por empresa
-  const porEmpresaMap = new Map<string, { totalAnalises: number; totalTokens: number }>();
+  const porEmpresaMap = new Map<string, { totalAnalises: number; totalTokens: number; totalInput: number; totalOutput: number }>();
 
   // Agrupamento por dia
-  const porDiaMap = new Map<string, DailyTokenStats>();
+  const porDiaMap = new Map<string, { data: string; totalAnalises: number; totalTokens: number; totalInput: number; totalOutput: number }>();
 
   for (const analise of analises) {
     const tokenUsage = analise.resultado_ia?.metrics?.token_usage as TokenUsage | undefined;
@@ -95,7 +120,7 @@ export async function getTokenStats(
 
     // Agrupamento por empresa
     if (!porEmpresaMap.has(owner)) {
-      porEmpresaMap.set(owner, { totalAnalises: 0, totalTokens: 0 });
+      porEmpresaMap.set(owner, { totalAnalises: 0, totalTokens: 0, totalInput: 0, totalOutput: 0 });
     }
     const empresaStats = porEmpresaMap.get(owner)!;
     empresaStats.totalAnalises++;
@@ -114,6 +139,8 @@ export async function getTokenStats(
       totalInput += tokenUsage.prompt_tokens;
       totalOutput += tokenUsage.completion_tokens;
       empresaStats.totalTokens += tokenUsage.total_tokens;
+      empresaStats.totalInput += tokenUsage.prompt_tokens;
+      empresaStats.totalOutput += tokenUsage.completion_tokens;
       diaStats.totalTokens += tokenUsage.total_tokens;
       diaStats.totalInput += tokenUsage.prompt_tokens;
       diaStats.totalOutput += tokenUsage.completion_tokens;
@@ -131,19 +158,32 @@ export async function getTokenStats(
   (empresas || []).forEach((e) => nomeMap.set(e.owner, e.nome_empresa));
 
   const porEmpresa: EmpresaTokenStats[] = Array.from(porEmpresaMap.entries())
-    .map(([owner, stats]) => ({
-      owner,
-      empresa: nomeMap.get(owner) || owner,
-      totalAnalises: stats.totalAnalises,
-      totalTokens: stats.totalTokens,
-      mediaTokens: stats.totalAnalises > 0 ? Math.round(stats.totalTokens / stats.totalAnalises) : 0,
-    }))
+    .map(([owner, stats]) => {
+      const custos = calcularCusto(stats.totalInput, stats.totalOutput);
+      return {
+        owner,
+        empresa: nomeMap.get(owner) || owner,
+        totalAnalises: stats.totalAnalises,
+        totalTokens: stats.totalTokens,
+        totalInput: stats.totalInput,
+        totalOutput: stats.totalOutput,
+        mediaTokens: stats.totalAnalises > 0 ? Math.round(stats.totalTokens / stats.totalAnalises) : 0,
+        custoUSD: custos.custoUSD,
+        custoBRL: custos.custoBRL,
+      };
+    })
     .sort((a, b) => b.totalTokens - a.totalTokens);
 
   // Histórico diário (últimos 30 dias, ordenado por data)
   const historicoDiario = Array.from(porDiaMap.values())
     .sort((a, b) => a.data.localeCompare(b.data))
-    .slice(-30);
+    .slice(-30)
+    .map((dia) => {
+      const custos = calcularCusto(dia.totalInput, dia.totalOutput);
+      return { ...dia, custoUSD: custos.custoUSD, custoBRL: custos.custoBRL };
+    });
+
+  const custoTotal = calcularCusto(totalInput, totalOutput);
 
   return {
     totalAnalises: analises.length,
@@ -155,6 +195,11 @@ export async function getTokenStats(
     mediaOutput: analisesComToken > 0 ? Math.round(totalOutput / analisesComToken) : 0,
     analisesComToken,
     analisesSemToken: analises.length - analisesComToken,
+    custoTotalUSD: custoTotal.custoUSD,
+    custoTotalBRL: custoTotal.custoBRL,
+    custoInputUSD: (totalInput / 1_000_000) * PRECO_INPUT_POR_1M,
+    custoOutputUSD: (totalOutput / 1_000_000) * PRECO_OUTPUT_POR_1M,
+    cambioBRL: CAMBIO_USD_BRL,
     porEmpresa,
     historicoDiario,
   };
@@ -171,6 +216,11 @@ function emptyStats(): TokenStats {
     mediaOutput: 0,
     analisesComToken: 0,
     analisesSemToken: 0,
+    custoTotalUSD: 0,
+    custoTotalBRL: 0,
+    custoInputUSD: 0,
+    custoOutputUSD: 0,
+    cambioBRL: CAMBIO_USD_BRL,
     porEmpresa: [],
     historicoDiario: [],
   };

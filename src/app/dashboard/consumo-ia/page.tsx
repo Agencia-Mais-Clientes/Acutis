@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getOwnerId, isAdminSession } from "@/lib/auth";
 import { getTokenStats } from "../actions-tokens";
 import { FadeIn } from "@/components/ui/motion";
-import { Cpu, ArrowLeft, Zap, BarChart3, Database, TrendingUp } from "lucide-react";
+import { Cpu, ArrowLeft, Zap, BarChart3, Database, TrendingUp, DollarSign } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 
@@ -56,7 +56,7 @@ export default async function ConsumoIAPage() {
       </FadeIn>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white group hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20">
             <Database className="h-24 w-24" />
@@ -138,6 +138,26 @@ export default async function ConsumoIAPage() {
             </p>
           </div>
         </Card>
+
+        <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-green-600 to-emerald-700 text-white group hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20">
+            <DollarSign className="h-24 w-24" />
+          </div>
+          <div className="p-6 relative z-10">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <DollarSign className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-sm font-medium text-white/90">Custo Total</span>
+            </div>
+            <h3 className="text-4xl font-bold tracking-tight">
+              {formatCurrency(stats.custoTotalBRL)}
+            </h3>
+            <p className="text-sm text-white/70 mt-2">
+              US$ {stats.custoTotalUSD.toFixed(2)} (cambio R${stats.cambioBRL.toFixed(2)})
+            </p>
+          </div>
+        </Card>
       </div>
 
       {/* Grid: Tabela por empresa + Historico diario */}
@@ -157,6 +177,7 @@ export default async function ConsumoIAPage() {
                     <th className="text-right py-3 px-2 text-gray-500 font-medium">Analises</th>
                     <th className="text-right py-3 px-2 text-gray-500 font-medium">Tokens</th>
                     <th className="text-right py-3 px-2 text-gray-500 font-medium">Media</th>
+                    <th className="text-right py-3 px-2 text-gray-500 font-medium">Custo (R$)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -177,6 +198,11 @@ export default async function ConsumoIAPage() {
                       <td className="py-3 px-2 text-right">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-violet-100 text-violet-700">
                           {empresa.mediaTokens.toLocaleString("pt-BR")}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                          {formatCurrency(empresa.custoBRL)}
                         </span>
                       </td>
                     </tr>
@@ -231,6 +257,7 @@ export default async function ConsumoIAPage() {
                     <th className="text-right py-2 px-2 text-gray-500 font-medium">Input</th>
                     <th className="text-right py-2 px-2 text-gray-500 font-medium">Output</th>
                     <th className="text-right py-2 px-2 text-gray-500 font-medium">Total</th>
+                    <th className="text-right py-2 px-2 text-gray-500 font-medium">Custo</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -255,6 +282,9 @@ export default async function ConsumoIAPage() {
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-cyan-100 text-cyan-700">
                           {formatTokens(dia.totalTokens)}
                         </span>
+                      </td>
+                      <td className="py-2 px-2 text-right text-gray-600">
+                        {formatCurrency(dia.custoBRL)}
                       </td>
                     </tr>
                   ))}
@@ -299,4 +329,14 @@ function formatTokens(tokens: number): string {
 function formatDate(dateStr: string): string {
   const [, month, day] = dateStr.split("-");
   return `${day}/${month}`;
+}
+
+/** Formata valor em Reais (ex: R$ 1,23) */
+function formatCurrency(value: number): string {
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
