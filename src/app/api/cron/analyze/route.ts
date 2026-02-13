@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
       // Body vazio é permitido
     }
 
-    const maxPerCompany = body.maxPerCompany || 20;
-    const maxTotal = body.maxTotal || 100;
+    const maxPerCompany = body.maxPerCompany || 50;
+    const maxTotal = body.maxTotal || 500;
     const fromDate = body.fromDate || undefined;
     const ownerFilter = body.owner || undefined;
 
@@ -99,11 +99,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2. Processa cada empresa
+    // 2. Processa cada empresa com distribuição JUSTA (round-robin)
+    // Divide o budget igualmente entre todas as empresas para garantir
+    // que TODAS sejam processadas, não apenas as primeiras
     const reports: CompanyReport[] = [];
     let totalProcessed = 0;
     let totalErrors = 0;
     let totalSkipped = 0;
+
+    // Calcula quota justa por empresa (mínimo 3 chats cada)
+    const chatsPerCompany = Math.max(3, Math.ceil(maxTotal / companies.length));
+    const effectivePerCompany = Math.min(chatsPerCompany, maxPerCompany);
+
+    console.log(`[CRON ANALYZE] Distribuição justa: ${effectivePerCompany} chats/empresa (${companies.length} empresas, budget total: ${maxTotal})`);
 
     for (const company of companies) {
       // Safety: verifica se atingiu o limite global
@@ -119,6 +127,10 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      // Budget restante para esta empresa (respeitando quota justa E limite global)
+      const budgetRestante = Math.min(effectivePerCompany, maxTotal - totalProcessed - totalErrors);
+      if (budgetRestante <= 0) break;
+
       const report: CompanyReport = {
         owner: company.owner,
         empresa: company.nome_empresa,
@@ -126,13 +138,14 @@ export async function POST(req: NextRequest) {
         organico: { processed: 0, skipped: 0, errors: 0 },
       };
 
-      console.log(`[CRON ANALYZE] === Empresa: ${company.nome_empresa} (${company.owner}) ===`);
+      console.log(`[CRON ANALYZE] === Empresa: ${company.nome_empresa} (${company.owner}) — quota: ${budgetRestante} ===`);
 
-      // Fase 1: Tráfego Pago (prioridade)
+      // Fase 1: Tráfego Pago (prioridade) — metade da quota
+      const quotaTrafego = Math.ceil(budgetRestante / 2);
       const fase1 = await processCompanyChats(
         company,
         "trafego_pago",
-        Math.min(maxPerCompany, maxTotal - totalProcessed - totalErrors),
+        quotaTrafego,
         startTime,
         fromDate
       );
@@ -141,12 +154,13 @@ export async function POST(req: NextRequest) {
       totalErrors += fase1.errors;
       totalSkipped += fase1.skipped;
 
-      // Fase 2: Orgânicos (se ainda tem budget)
-      if (totalProcessed + totalErrors < maxTotal) {
+      // Fase 2: Orgânicos — resto da quota
+      const quotaOrganico = budgetRestante - fase1.processed - fase1.errors;
+      if (quotaOrganico > 0 && totalProcessed + totalErrors < maxTotal) {
         const fase2 = await processCompanyChats(
           company,
           "organico",
-          Math.min(maxPerCompany, maxTotal - totalProcessed - totalErrors),
+          quotaOrganico,
           startTime,
           fromDate
         );
@@ -160,15 +174,20 @@ export async function POST(req: NextRequest) {
     }
 
     const durationMs = Date.now() - startTime;
+    const stoppedEarly = reports.length < companies.length || (Date.now() - startTime) > 250000;
+    const hasMore = stoppedEarly || totalProcessed > 0;
+
     console.log(`[CRON ANALYZE] ✅ Concluído em ${Math.round(durationMs / 1000)}s`, {
       totalProcessed,
       totalErrors,
       totalSkipped,
       companiesProcessed: reports.length,
+      hasMore,
     });
 
     return NextResponse.json({
       success: true,
+      hasMore,
       companies: reports,
       totalProcessed,
       totalErrors,

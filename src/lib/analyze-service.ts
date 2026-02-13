@@ -231,29 +231,54 @@ export async function getActiveChatsWithoutAnalysisFallback(
     }
   });
 
-  // Filtra: inclui chats NUNCA analisados OU que têm mensagens NOVAS após última análise
+  // Separa chats nunca analisados (incluir direto) dos já analisados (verificar novas msgs)
   const chatsPendentes: ChatAtivo[] = [];
+  const chatsParaVerificar: { chat: ChatAtivo; lastId: number }[] = [];
   
   for (const chat of chatsUnicos.values()) {
     const lastAnalyzedId = ultimoIdAnalisado.get(chat.chatid);
     
     if (lastAnalyzedId === undefined) {
-      // Nunca analisado → incluir
       chatsPendentes.push(chat);
     } else {
-      // Já analisado → verificar se tem mensagens novas após o cursor
-      const { count } = await supabaseAdmin
-        .from("mensagens_clientes")
-        .select("id", { count: "exact", head: true })
-        .eq("chatid", chat.chatid)
-        .gt("id", lastAnalyzedId);
+      chatsParaVerificar.push({ chat, lastId: lastAnalyzedId });
+    }
+  }
+
+  // Batch: verifica quais chats já analisados têm mensagens NOVAS
+  // Em vez de 1 query por chat (N+1), faz 1 query por lote de 50
+  if (chatsParaVerificar.length > 0) {
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < chatsParaVerificar.length; i += BATCH_SIZE) {
+      const batch = chatsParaVerificar.slice(i, i + BATCH_SIZE);
+      const batchChatids = batch.map(b => b.chat.chatid);
       
-      if (count && count > 0) {
-        chatsPendentes.push(chat);
+      // Busca o MAX(id) por chatid em um único SELECT
+      const { data: maxIds } = await supabaseAdmin
+        .from("mensagens_clientes")
+        .select("chatid, id")
+        .in("chatid", batchChatids)
+        .order("id", { ascending: false });
+      
+      // Monta mapa chatid → maxId encontrado
+      const maxIdPorChat = new Map<string, number>();
+      (maxIds || []).forEach(row => {
+        if (!maxIdPorChat.has(row.chatid)) {
+          maxIdPorChat.set(row.chatid, row.id);
+        }
+      });
+      
+      // Compara: se maxId > lastAnalyzedId, tem mensagens novas
+      for (const { chat, lastId } of batch) {
+        const maxMsgId = maxIdPorChat.get(chat.chatid);
+        if (maxMsgId && maxMsgId > lastId) {
+          chatsPendentes.push(chat);
+        }
       }
     }
   }
 
+  console.log(`[ANALYZE] ${chatsPendentes.length} chats pendentes de ${chatsUnicos.size} totais`);
   return chatsPendentes.slice(0, limit);
 }
 

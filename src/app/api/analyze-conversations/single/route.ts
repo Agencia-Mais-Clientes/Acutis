@@ -11,23 +11,23 @@ export const maxDuration = 30;
 
 /**
  * POST /api/analyze-conversations/single
- * Processa apenas 1 chat por vez para evitar timeout e rate limit.
+ * Processa apenas 1 chat por vez com ROUND-ROBIN entre empresas.
  * 
- * MODO AUTOMÁTICO (sem ownerId):
- *   - Busca TODAS empresas ativas
- *   - Para cada empresa, verifica se há chats pendentes
- *   - Processa o primeiro chat encontrado
- *   - Retorna hasMore=true se ainda houver mais chats em qualquer empresa
- * 
- * MODO MANUAL (com ownerId):
- *   - Processa apenas chats da empresa especificada
+ * Cada chamada processa 1 chat e retorna o `nextOwner` para que a
+ * próxima chamada comece da empresa seguinte — garantindo que TODAS
+ * as empresas sejam processadas, não apenas a primeira.
  * 
  * Body:
  * {
- *   "ownerId"?: "string",        // Opcional. Se omitido, itera TODAS empresas ativas
- *   "origemFilter"?: "trafego_pago" | "organico" | "todos",  // Default: "todos"
- *   "fromDate"?: "2026-02-01"    // Opcional. Só analisa chats a partir dessa data
+ *   "ownerId"?: "string",        // Modo manual: apenas essa empresa
+ *   "lastOwner"?: "string",      // Round-robin: começa APÓS esta empresa
+ *   "origemFilter"?: "trafego_pago" | "organico" | "todos",
+ *   "fromDate"?: "2026-02-01"
  * }
+ * 
+ * Response inclui:
+ *   - nextOwner: passar como lastOwner na próxima chamada
+ *   - hasMore: true se processou algo (provavelmente há mais)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
 
     let body: {
       ownerId?: string;
+      lastOwner?: string;
       origemFilter?: OrigemFilter;
       fromDate?: string;
     } = {};
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
       // Body vazio é permitido
     }
 
-    const { ownerId, origemFilter = "todos", fromDate } = body;
+    const { ownerId, lastOwner, origemFilter = "todos", fromDate } = body;
 
     // Determina empresas para processar
     let companies: ConfigEmpresa[];
@@ -91,10 +92,21 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Round-robin: reordena a lista para começar APÓS lastOwner
+    if (lastOwner && companies.length > 1) {
+      const lastIdx = companies.findIndex(c => c.owner === lastOwner);
+      if (lastIdx !== -1) {
+        // Rotaciona: empresas após lastOwner vêm primeiro, depois as anteriores
+        const rotated = [
+          ...companies.slice(lastIdx + 1),
+          ...companies.slice(0, lastIdx + 1),
+        ];
+        companies = rotated;
+        console.log(`[ANALYZE SINGLE] Round-robin: começando após ${lastOwner} (${companies[0]?.nome_empresa})`);
+      }
+    }
+
     // Prioridade: tráfego pago primeiro, depois o resto
-    // Quando origemFilter é "todos", faz 2 passadas:
-    //   1ª) Busca chats de tráfego pago
-    //   2ª) Se não houver, busca todos os restantes
     const filtrosEmOrdem: OrigemFilter[] =
       origemFilter === "todos"
         ? ["trafego_pago", "todos"]
@@ -120,63 +132,16 @@ export async function POST(req: NextRequest) {
 
         const result = await processChat(chat, company, false);
 
-        // Verifica se há MAIS chats pendentes (considerando prioridade)
-        let hasMore = false;
-
-        // Verifica se essa empresa tem mais com o filtro atual
-        const moreInCompany = await getActiveChatsWithoutAnalysisFallback(
-          company.owner,
-          1,
-          filtroAtual,
-          fromDate
-        );
-        if (moreInCompany.length > 0) {
-          hasMore = true;
-        } else {
-          // Verifica empresas restantes com filtro atual
-          const currentIdx = companies.indexOf(company);
-          for (let i = currentIdx + 1; i < companies.length; i++) {
-            const moreChats = await getActiveChatsWithoutAnalysisFallback(
-              companies[i].owner,
-              1,
-              filtroAtual,
-              fromDate
-            );
-            if (moreChats.length > 0) {
-              hasMore = true;
-              break;
-            }
-          }
-          // Se não tem mais do filtro atual, verifica filtros seguintes
-          if (!hasMore) {
-            const filtroIdx = filtrosEmOrdem.indexOf(filtroAtual);
-            for (let f = filtroIdx + 1; f < filtrosEmOrdem.length; f++) {
-              for (const c of companies) {
-                const more = await getActiveChatsWithoutAnalysisFallback(
-                  c.owner,
-                  1,
-                  filtrosEmOrdem[f],
-                  fromDate
-                );
-                if (more.length > 0) {
-                  hasMore = true;
-                  break;
-                }
-              }
-              if (hasMore) break;
-            }
-          }
-        }
-
         return NextResponse.json({
           success: result.status === "success",
           chatid: chat.chatid,
           owner: company.owner,
           empresa: company.nome_empresa,
+          nextOwner: company.owner, // N8N deve passar isso como lastOwner na próxima chamada
           origem: filtroAtual === "trafego_pago" ? "trafego_pago" : "organico/outros",
           status: result.status,
           message: result.message,
-          hasMore,
+          hasMore: true, // Se processou algo, provavelmente há mais
         });
       }
     }
