@@ -72,33 +72,47 @@ export async function getTokenStats(
   const authorizedOwnerId = await requireAuth(ownerId);
   const isAdmin = await isAdminSession();
 
-  // Monta query base
-  let query = supabaseAdmin
-    .from("analises_conversas")
-    .select("owner, created_at, resultado_ia")
-    .order("created_at", { ascending: false });
+  // Busca paginada — PostgREST limita 1000 linhas por request
+  const PAGE_SIZE = 1000;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const analises: { owner: string; created_at: string; resultado_ia: any }[] = [];
+  let page = 0;
+  let hasMore = true;
 
-  // Se não é admin, filtra pelo owner
-  if (!isAdmin) {
-    query = query.eq("owner", authorizedOwnerId);
+  while (hasMore) {
+    let query = supabaseAdmin
+      .from("analises_conversas")
+      .select("owner, created_at, resultado_ia")
+      .order("created_at", { ascending: false })
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+    if (!isAdmin) {
+      query = query.eq("owner", authorizedOwnerId);
+    }
+    if (periodo?.inicio) {
+      query = query.gte("created_at", new Date(periodo.inicio).toISOString());
+    }
+    if (periodo?.fim) {
+      query = query.lte("created_at", new Date(periodo.fim).toISOString());
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("[TOKENS] Erro ao buscar análises (page " + page + "):", error);
+      break;
+    }
+
+    if (data && data.length > 0) {
+      analises.push(...data);
+      hasMore = data.length === PAGE_SIZE;
+      page++;
+    } else {
+      hasMore = false;
+    }
   }
 
-  // Filtra por período
-  if (periodo?.inicio) {
-    query = query.gte("created_at", new Date(periodo.inicio).toISOString());
-  }
-  if (periodo?.fim) {
-    query = query.lte("created_at", new Date(periodo.fim).toISOString());
-  }
-
-  const { data: analises, error } = await query;
-
-  if (error) {
-    console.error("[TOKENS] Erro ao buscar análises:", error);
-    return emptyStats();
-  }
-
-  if (!analises || analises.length === 0) {
+  if (analises.length === 0) {
     return emptyStats();
   }
 
