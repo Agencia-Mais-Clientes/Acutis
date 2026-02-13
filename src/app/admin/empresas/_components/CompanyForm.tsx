@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { saveCompany, Empresa } from "../../actions";
+import { saveCompany, migrateCompanyOwner, getOwnerHistory, Empresa, type OwnerHistorico } from "../../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet, Megaphone, Users, Calendar, UserCircle } from "lucide-react";
+import { ArrowLeft, Save, Bot, Building2, Phone, Target, Key, Sparkles, Sheet, Megaphone, Users, Calendar, UserCircle, RefreshCw, History, AlertTriangle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -16,6 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Link from "next/link";
 import { BusinessHoursEditor } from "./BusinessHoursEditor";
 import type { HorarioFuncionamento } from "@/lib/analyze-types";
@@ -130,6 +140,37 @@ export function CompanyForm({ empresa, managers = [] }: CompanyFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Estado para migração de owner
+  const [migrateDialogOpen, setMigrateDialogOpen] = useState(false);
+  const [newOwner, setNewOwner] = useState("");
+  const [migrating, setMigrating] = useState(false);
+  const [ownerHistory, setOwnerHistory] = useState<OwnerHistorico[]>([]);
+
+  // Carrega histórico de trocas de owner
+  useEffect(() => {
+    if (isEditing && empresa?.owner) {
+      getOwnerHistory(empresa.owner).then(setOwnerHistory);
+    }
+  }, [isEditing, empresa?.owner]);
+
+  async function handleMigrateOwner() {
+    if (!newOwner || !empresa?.owner) return;
+
+    setMigrating(true);
+    const result = await migrateCompanyOwner(empresa.owner, newOwner);
+
+    if (result.success) {
+      toast.success(`Número migrado com sucesso! ${empresa.owner} → ${newOwner}`);
+      setMigrateDialogOpen(false);
+      setNewOwner("");
+      router.push(`/admin/empresas/${newOwner}`);
+      router.refresh();
+    } else {
+      toast.error(result.error || "Erro ao migrar número");
+    }
+    setMigrating(false);
+  }
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -178,18 +219,100 @@ export function CompanyForm({ empresa, managers = [] }: CompanyFormProps) {
                 <Phone className="h-3.5 w-3.5" />
                 WhatsApp (Owner) *
               </label>
-              <Input
-                name="owner"
-                value={formData.owner}
-                onChange={handleChange}
-                placeholder="5511999999999"
-                className="bg-gray-50 border-gray-200 text-gray-900 focus:border-violet-500 focus:ring-violet-500"
-                required
-                disabled={isEditing}
-              />
+              <div className="flex gap-2">
+                <Input
+                  name="owner"
+                  value={formData.owner}
+                  onChange={handleChange}
+                  placeholder="5511999999999"
+                  className="bg-gray-50 border-gray-200 text-gray-900 focus:border-violet-500 focus:ring-violet-500"
+                  required
+                  disabled={isEditing}
+                />
+                {isEditing && (
+                  <AlertDialog open={migrateDialogOpen} onOpenChange={setMigrateDialogOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" className="shrink-0 text-amber-600 border-amber-300 hover:bg-amber-50">
+                        <RefreshCw className="h-4 w-4 mr-1" />
+                        Alterar Número
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                          <AlertTriangle className="h-5 w-5 text-amber-500" />
+                          Migrar Número WhatsApp
+                        </AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                          <div className="space-y-3">
+                            <p>
+                              Isso vai alterar o número principal da empresa e <strong>migrar todos os dados históricos</strong> (mensagens, análises, leads, funis) para o novo número.
+                            </p>
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-800 text-sm">
+                              <strong>⚠️ Atenção:</strong> Esta ação afeta todas as tabelas do banco de dados. Certifique-se de que o novo número está correto.
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-500 mb-1 block font-medium">Número atual</label>
+                              <Input value={empresa?.owner || ""} disabled className="bg-gray-100 text-gray-500" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-500 mb-1 block font-medium">Novo número</label>
+                              <Input
+                                value={newOwner}
+                                onChange={(e) => setNewOwner(e.target.value)}
+                                placeholder="5511999999999"
+                                className="border-amber-300 focus:border-amber-500 focus:ring-amber-500"
+                              />
+                              <p className="text-xs text-gray-400 mt-1">Sem + e sem espaços</p>
+                            </div>
+                          </div>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={migrating}>Cancelar</AlertDialogCancel>
+                        <Button
+                          onClick={handleMigrateOwner}
+                          disabled={migrating || !newOwner || newOwner === empresa?.owner}
+                          className="bg-amber-600 hover:bg-amber-700"
+                        >
+                          {migrating ? "Migrando..." : "Confirmar Migração"}
+                        </Button>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
               <p className="text-xs text-gray-400 mt-1.5">
                 Número sem + e sem espaços (ex: 5511999999999)
               </p>
+              {/* Histórico de trocas de número */}
+              {isEditing && ownerHistory.length > 0 && (
+                <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-2">
+                    <History className="h-3.5 w-3.5" />
+                    Histórico de números
+                  </div>
+                  <div className="space-y-1.5">
+                    {ownerHistory.map((h) => (
+                      <div key={h.id} className="flex items-center gap-2 text-xs text-gray-600">
+                        <span className="font-mono text-gray-400">{h.owner_anterior}</span>
+                        <span className="text-gray-300">→</span>
+                        <span className="font-mono font-medium">{h.owner_atual}</span>
+                        <span className="text-gray-300">•</span>
+                        <span className="text-gray-400">
+                          {new Date(h.migrado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                        {h.migrado_por && (
+                          <>
+                            <span className="text-gray-300">•</span>
+                            <span className="text-gray-400 italic">{h.migrado_por}</span>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Nome da Empresa */}

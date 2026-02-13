@@ -409,4 +409,103 @@ export async function getManagers(): Promise<{ id: string; email: string; name?:
   }));
 }
 
+// ============================================
+// MIGRAÇÃO DE OWNER (TROCA DE NÚMERO WHATSAPP)
+// ============================================
 
+export interface OwnerHistorico {
+  id: number;
+  owner_atual: string;
+  owner_anterior: string;
+  migrado_em: string;
+  migrado_por: string | null;
+}
+
+/**
+ * Migra o owner (número WhatsApp) de uma empresa para um novo número.
+ * O CASCADE do banco propaga automaticamente para todas as tabelas filhas.
+ */
+export async function migrateCompanyOwner(
+  oldOwner: string,
+  newOwner: string
+): Promise<{ success: boolean; error?: string }> {
+  // Validação básica
+  if (!oldOwner || !newOwner) {
+    return { success: false, error: "Número antigo e novo são obrigatórios" };
+  }
+
+  if (oldOwner === newOwner) {
+    return { success: false, error: "O novo número é igual ao atual" };
+  }
+
+  // Valida formato do número (somente dígitos, 10-15 caracteres)
+  if (!/^\d{10,15}$/.test(newOwner)) {
+    return { success: false, error: "Formato inválido. Use somente números, entre 10 e 15 dígitos (ex: 5511999999999)" };
+  }
+
+  // Verifica se o novo owner já existe
+  const { data: existing } = await supabaseAdmin
+    .from("config_empresas")
+    .select("owner")
+    .eq("owner", newOwner)
+    .maybeSingle();
+
+  if (existing) {
+    return { success: false, error: `O número ${newOwner} já está cadastrado para outra empresa` };
+  }
+
+  // Verifica se o owner antigo existe
+  const { data: current } = await supabaseAdmin
+    .from("config_empresas")
+    .select("owner, nome_empresa")
+    .eq("owner", oldOwner)
+    .maybeSingle();
+
+  if (!current) {
+    return { success: false, error: `Empresa com owner ${oldOwner} não encontrada` };
+  }
+
+  // Busca o admin que está fazendo a troca
+  const session = await getAdminSession();
+  const adminEmail = session?.user?.email || "unknown";
+
+  // Executa via RPC com timeout estendido (60s) para suportar CASCADE em tabelas grandes
+  const { data, error: rpcError } = await supabaseAdmin
+    .rpc("migrate_owner", {
+      p_old_owner: oldOwner,
+      p_new_owner: newOwner,
+      p_migrado_por: adminEmail,
+    });
+
+  if (rpcError) {
+    console.error("[ADMIN] Erro ao migrar owner:", rpcError);
+    return { success: false, error: `Erro ao migrar: ${rpcError.message}` };
+  }
+
+  const result = data as { success: boolean; error?: string };
+  if (!result.success) {
+    return { success: false, error: result.error || "Erro desconhecido na migração" };
+  }
+
+  console.log(`[ADMIN] Owner migrado: ${oldOwner} → ${newOwner} (por ${adminEmail})`);
+  return { success: true };
+}
+
+/**
+ * Busca o histórico de trocas de número para um owner.
+ * Busca tanto por owner_atual quanto owner_anterior para mostrar toda a cadeia.
+ */
+export async function getOwnerHistory(owner: string): Promise<OwnerHistorico[]> {
+  const { data, error } = await supabaseAdmin
+    .from("owner_historico")
+    .select("*")
+    .or(`owner_atual.eq.${owner},owner_anterior.eq.${owner}`)
+    .order("migrado_em", { ascending: false });
+
+  if (error) {
+    console.error("[ADMIN] Erro ao buscar histórico de owner:", error);
+    return [];
+  }
+
+  return data as OwnerHistorico[];
+}
